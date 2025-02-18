@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portail de Jeux</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Press Start 2P', cursive;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #000;
+            color: #fff;
+        }
+
+        h1 {
+            color: #ff69b4;
+            text-shadow: 2px 2px #00f;
+            animation: blink 1.5s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        .game-list {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .game-list li {
+            margin: 20px 0;
+        }
+
+        .game-list a {
+            text-decoration: none;
+            color: #ff69b4;
+            font-size: 1.5em;
+            border: 2px solid #ff69b4;
+            padding: 10px 20px;
+            border-radius: 10px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .game-list a:hover {
+            background-color: #ff69b4;
+            color: #00f;
+        }
+    </style>
+</head>
+<body>
+    <h1>Portail de Jeux</h1>
+    <ul class="game-list">
+        <li><a href="tic-tac-toe/tic-tac-toe.html">Jouer au Tic Tac Toe</a></li>
+        <!-- Ajoutez d'autres jeux ici -->
+        <li><a href="bataille/bataille.html">Jouer à la bataille</a></li>
+    </ul>
+</body>
+</html>

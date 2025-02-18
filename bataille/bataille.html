@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jeu de la Bataille</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Press Start 2P', cursive;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #000;
+            color: #fff;
+        }
+
+        h1 {
+            color: #ff69b4;
+            text-shadow: 2px 2px #00f;
+            animation: blink 1.5s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        .cards {
+            display: flex;
+            gap: 20px;
+        }
+
+        .card {
+            width: 100px;
+            height: 150px;
+            border: 2px solid #ff69b4;
+            background-color: #fff;
+            color: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5em;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .card:hover {
+            transform: scale(1.1);
+        }
+
+        .score {
+            margin-top: 20px;
+            font-size: 1.2em;
+        }
+        h1 {
+        color: #ff69b4;
+        text-shadow: 2px 2px #00f;
+        animation: blink 1.5s infinite;
+    }
+
+    @keyframes blink {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0; }
+    }
+
+    .cards {
+        display: flex;
+        gap: 20px;
+    }
+
+    .card {
+        width: 100px;
+        height: 150px;
+        border: 2px solid #ff69b4;
+        background-color: #222;
+        color: #fff;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        font-size: 1em;
+        cursor: pointer;
+        transition: transform 0.3s;
+        padding: 10px;
+    }
+
+    .card:hover {
+        transform: scale(1.1);
+    }
+
+    .score {
+        margin-top: 20px;
+        font-size: 1.2em;
+    }
+
+    button {
+        margin-top: 10px;
+        padding: 10px 20px;
+        font-size: 1em;
+        cursor: pointer;
+        background-color: #ff69b4;
+        border: none;
+        color: white;
+        font-family: 'Press Start 2P', cursive;
+    }
+
+    button:hover {
+        background-color: #ff1493;
+    }
+    </style>
+</head>
+<body>
+    <h1>Jeu de la Bataille</h1>
+    <div class="cards">
+        <div class="card" id="player-card">Cliquez pour jouer</div>
+        <div class="card" id="pc-card">Carte PC</div>
+    </div>
+    <div class="score">
+        <p>Score Joueur: <span id="player-score">0</span></p>
+        <p>Score PC: <span id="pc-score">0</span></p>
+    </div>
+    <button id="restart-game">Nouvelle Partie</button>
+    <script src="battle.js">
+    </script>
+    <script>
+        const couleurs = ['CARREAU', 'COEUR', 'TREFLE', 'PIQUE'];
+        const noms = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'Valet', 'Dame', 'Roi', 'As'];
+        const valeurs = {
+            '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9, '10': 10,
+            'Valet': 11, 'Dame': 12, 'Roi': 13, 'As': 14
+        };
+    
+        let deck = [];
+        let joueur1 = [];
+        let joueur2 = [];
+        let pointsJoueur1 = 0;
+        let pointsJoueur2 = 0;
+        let partieTerminee = false;
+    
+        function initializeGame() {
+            deck = [];
+            for (let couleur of couleurs) {
+                for (let nom of noms) {
+                    deck.push([nom, couleur]);
+                }
+            }
+            shuffle(deck);
+            joueur1 = deck.slice(0, 26);
+            joueur2 = deck.slice(26);
+            shuffle(joueur1);
+            shuffle(joueur2);
+            pointsJoueur1 = 0;
+            pointsJoueur2 = 0;
+            partieTerminee = false;
+            document.getElementById('player-score').textContent = pointsJoueur1;
+            document.getElementById('pc-score').textContent = pointsJoueur2;
+            document.getElementById('player-card').textContent = 'Cliquez pour jouer';
+            document.getElementById('pc-card').textContent = 'Carte PC';
+        }
+    
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+    
+        function playRound() {
+            if (partieTerminee) return;
+            if (joueur1.length === 0 || joueur2.length === 0) {
+                terminerPartie();
+                return;
+            }
+    
+            const carteJouee1 = joueur1.shift();
+            const carteJouee2 = joueur2.shift();
+    
+            document.getElementById('player-card').textContent = `${carteJouee1[0]}\n${carteJouee1[1]}`;
+            document.getElementById('pc-card').textContent = `${carteJouee2[0]}\n${carteJouee2[1]}`;
+    
+            const valeur1 = valeurs[carteJouee1[0]];
+            const valeur2 = valeurs[carteJouee2[0]];
+    
+            if (valeur1 > valeur2) {
+                pointsJoueur1++;
+            } else if (valeur2 > valeur1) {
+                pointsJoueur2++;
+            }
+    
+            document.getElementById('player-score').textContent = pointsJoueur1;
+            document.getElementById('pc-score').textContent = pointsJoueur2;
+    
+            if (joueur1.length === 0 || joueur2.length === 0) {
+                terminerPartie();
+            }
+        }
+    
+        function terminerPartie() {
+            partieTerminee = true;
+            let message = pointsJoueur1 > pointsJoueur2 ? "Bravo c'est gagné !" : pointsJoueur2 > pointsJoueur1 ? "La technologie a encore gagné !" : "Match nul !";
+            alert(message);
+        }
+    
+        document.getElementById('player-card').addEventListener('click', playRound);
+        document.getElementById('restart-game').addEventListener('click', initializeGame);
+    
+        initializeGame();
+    </script>
+
+</body>
+</html>
