@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sudoku</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #000;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            color: #fff;
+            background-image: linear-gradient(to bottom, #000000, #0f0f0f);
+            font-family: 'Press Start 2P', cursive;
+        }
+        #sudoku-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            background: #fff;
+            border-radius: 10px;
+            /* box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2); */
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+
+        }
+        #sudoku-grid {
+            display: grid;
+            grid-template-columns: repeat(9, 50px);
+            grid-template-rows: repeat(9, 50px);
+            position: relative;
+            border: 6px solid black;
+        }
+        .cell {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            background-color: white;
+            border: 1px solid black;
+            transition: transform 0.2s, border 0.2s;
+        }
+        .cell:nth-child(3n) {
+            border-right: 5px solid black;
+        }
+        .cell:nth-child(n+19):nth-child(-n+27),
+        .cell:nth-child(n+46):nth-child(-n+54) {
+            border-bottom: 5px solid black;
+        }
+        .cell.selected {
+            transform: scale(1.2);
+            border: 2px solid red;
+        }
+        .color-palette {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 10px;
+        }
+        .color-option {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .color-option:hover {
+            transform: scale(1.3);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+        }
+        .error, .victory {
+            color: red;
+            margin-top: 10px;
+        }
+        .victory {
+            color: green;
+        }
+        .options {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 20px;
+        }
+        .options label {
+            margin: 5px 0;
+            font-size: 16px;
+        }
+        .options input[type="range"] {
+            width: 200px;
+            height: 5px;
+            background: #ddd;
+            border-radius: 5px;
+        }
+        .options input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #444;
+            cursor: pointer;
+        }
+        .options input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+        }
+        footer {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #666;
+        }
+        .note {
+            color: #ffcc00;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Sudoku</h1>
+    <div id="sudoku-container">
+        <div id="sudoku-grid"></div>
+        <div id="color-palette" class="color-palette"></div>
+        <div id="error-message" class="error"></div>
+        <div id="victory-message" class="victory"></div>
+    </div>
+    <div class="options">
+        <label>
+            <input type="checkbox" id="dynamic-colors">
+            Un peu d'aide pour trouver la bonne couleur
+        </label>
+        <label>
+            Complétion automatique: <input type="range" id="completion-slider" min="10" max="80" value="10">
+        </label>
+        <div class="note">* Rafraîchissez la page pour appliquer le niveau de complétion automatique.</div>
+    </div>
+    <footer>
+        Inspiré du code de <a href="https://github.com/David-Elkabas/Sudoku/blob/master/sudokuGenerator.py" target="_blank">David Elkabas</a>
+    </footer>
+    <script>
+        const colors = ['#1f78b4', '#33a02c', '#e31a1c', '#ff7f00', '#6a3d9a', '#b15928', '#b2df8a', '#a6cee3', '#fdbf6f'];
+        const gridSize = 9;
+        let selectedCell = null;
+        let grid = Array.from({ length: gridSize }, () => Array(gridSize).fill(0));
+
+        function createGrid() {
+            const gridElement = document.getElementById('sudoku-grid');
+            for (let row = 0; row < gridSize; row++) {
+                for (let col = 0; col < gridSize; col++) {
+                    const cell = document.createElement('div');
+                    cell.classList.add('cell');
+                    cell.dataset.index = row * gridSize + col;
+                    cell.addEventListener('click', () => selectCell(row * gridSize + col));
+                    gridElement.appendChild(cell);
+                }
+            }
+        }
+
+        function createColorPalette() {
+            const palette = document.getElementById('color-palette');
+            palette.innerHTML = ''; // Clear previous options
+            colors.forEach((color, index) => {
+                const colorOption = document.createElement('div');
+                colorOption.classList.add('color-option');
+                colorOption.style.backgroundColor = color;
+                colorOption.addEventListener('click', () => placeColor(index));
+                palette.appendChild(colorOption);
+            });
+        }
+
+        function selectCell(index) {
+            const cells = document.querySelectorAll('.cell');
+            cells.forEach(cell => {
+                cell.classList.remove('selected');
+                cell.style.borderColor = 'black';
+            });
+            selectedCell = index;
+            const selected = document.querySelector(`.cell[data-index='${index}']`);
+            selected.classList.add('selected');
+            updateColorOptions();
+        }
+
+        function placeColor(colorIndex) {
+            if (selectedCell !== null) {
+                const row = Math.floor(selectedCell / gridSize);
+                const col = selectedCell % gridSize;
+                if (validCheck(grid, colorIndex + 1, [row, col])) {
+                    grid[row][col] = colorIndex + 1;
+                    updateGridDisplay();
+                    checkVictory();
+                    selectedCell = null;
+                } else {
+                    document.getElementById('error-message').textContent = "🚨 Erreur : Les règles du Sudoku ne sont pas respectées. 🚨";
+                }
+            }
+        }
+
+        function updateGridDisplay() {
+            const cells = document.querySelectorAll('.cell');
+            cells.forEach((cell, index) => {
+                const row = Math.floor(index / gridSize);
+                const col = index % gridSize;
+                const value = grid[row][col];
+                cell.style.backgroundColor = value ? colors[value - 1] : 'white';
+            });
+        }
+
+        function checkVictory() {
+            if (grid.every(row => row.every(cell => cell !== 0))) {
+                document.getElementById('victory-message').textContent = "Bravo, c'est gagné ! 🎉";
+            }
+        }
+
+        function findEmpty(board) {
+            for (let y = 0; y < board.length; y++) {
+                for (let x = 0; x < board[0].length; x++) {
+                    if (board[y][x] === 0) {
+                        return [y, x];
+                    }
+                }
+            }
+            return null;
+        }
+
+        function validCheck(board, number, coordinates) {
+            for (let x = 0; x < board.length; x++) {
+                if (number === board[coordinates[0]][x] && coordinates[1] !== x) {
+                    return false;
+                }
+            }
+
+            for (let y = 0; y < board.length; y++) {
+                if (number === board[y][coordinates[1]] && coordinates[0] !== y) {
+                    return false;
+                }
+            }
+
+            const box_x = Math.floor(coordinates[1] / 3) * 3;
+            const box_y = Math.floor(coordinates[0] / 3) * 3;
+
+            for (let y = box_y; y < box_y + 3; y++) {
+                for (let x = box_x; x < box_x + 3; x++) {
+                    if (number === board[y][x] && y !== coordinates[0] && x !== coordinates[1]) {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        function generateRandomBoard(board) {
+            const find = findEmpty(board);
+            if (!find) return true;
+
+            const [row, col] = find;
+            const numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+            for (let number of numbers.sort(() => Math.random() - 0.5)) {
+                if (validCheck(board, number, [row, col])) {
+                    board[row][col] = number;
+                    if (generateRandomBoard(board)) return true;
+                    board[row][col] = 0;
+                }
+            }
+            return false;
+        }
+
+        function deleteCells(board, number) {
+            while (number > 0) {
+                const row = Math.floor(Math.random() * gridSize);
+                const col = Math.floor(Math.random() * gridSize);
+                if (board[row][col] !== 0) {
+                    board[row][col] = 0;
+                    number--;
+                }
+            }
+        }
+
+        function sudokuGenerate(board, level) {
+            generateRandomBoard(board);
+            const completionLevel = document.getElementById('completion-slider').value;
+            deleteCells(board, 81 - completionLevel);
+        }
+
+        function updateColorOptions() {
+            const palette = document.getElementById('color-palette');
+            palette.innerHTML = ''; // Clear previous options
+            if (document.getElementById('dynamic-colors').checked) {
+                const row = Math.floor(selectedCell / gridSize);
+                const col = selectedCell % gridSize;
+                const availableColors = [];
+                for (let i = 0; i < colors.length; i++) {
+                    if (validCheck(grid, i + 1, [row, col])) {
+                        availableColors.push(colors[i]);
+                    }
+                }
+                availableColors.forEach(color => {
+                    const colorOption = document.createElement('div');
+                    colorOption.classList.add('color-option');
+                    colorOption.style.backgroundColor = color;
+                    colorOption.addEventListener('click', () => placeColor(colors.indexOf(color)));
+                    palette.appendChild(colorOption);
+                });
+            } else {
+                createColorPalette();
+            }
+        }
+
+        createGrid();
+        createColorPalette();
+        sudokuGenerate(grid, 1); // Génère une grille remplie à 98%
+        updateGridDisplay();
+    </script>
+</body>
+</html>

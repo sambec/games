@@ -8,6 +8,7 @@ body {
     margin: 0;
     background-color: #000;
     color: #fff;
+    cursor: crosshair;
 }
 
 h1 {
@@ -75,3 +76,4 @@ button:hover {
     background-color: #ff1493;
 }
 
+/* Start https://www.cursors-4u.com */ * {cursor: url(https://ani.cursors-4u.net/cursors/cur-13/cur1151.ani), url(https://ani.cursors-4u.net/cursors/cur-13/cur1151.png), auto !important;} /* End https://www.cursors-4u.com */

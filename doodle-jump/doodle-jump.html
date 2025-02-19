@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cool Doodle Jump</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: 'Press Start 2P', cursive;
+        }
+        canvas {
+            border: 5px solid #fff;
+            border-radius: 10px;
+            background-color: rgba(0, 0, 0, 0.8);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+        }
+        h1 {
+            position: absolute;
+            top: 20px;
+            color: #ff69b4;
+            text-shadow: 2px 2px #000;
+        }
+    </style>
+</head>
+<body>
+    <h1>Cool Doodle Jump</h1>
+    <canvas id="gameCanvas" width="400" height="600"></canvas>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const player = {
+            x: canvas.width / 2,
+            y: canvas.height - 150,
+            width: 50,
+            height: 50,
+            color: '#FFD700', // Couleur dorée pour le joueur
+            velocityY: 0,
+            velocityX: 0,
+            gravity: 0.5,
+            jumpStrength: -10,
+            speed: 5
+        };
+
+        const platforms = [];
+        const platformColor = '#fff'; // Couleur blanche pour les plateformes
+
+        let score = 0;
+        let gameSpeed = 1;
+        let flameIntensity = 0;
+
+        function createPlatform(x, y, width) {
+            return { x, y, width, height: 20, color: platformColor };
+        }
+
+        function generatePlatforms() {
+            let y = canvas.height - 100;
+            while (y > 0) {
+                const x = Math.random() * (canvas.width - 50);
+                const width = 50 + Math.random() * 100;
+                platforms.push(createPlatform(x, y, width));
+                y -= 100 + Math.random() * 100;
+            }
+        }
+
+        function drawPlayer() {
+            ctx.fillStyle = player.color;
+            ctx.beginPath();
+            ctx.arc(player.x + player.width / 2, player.y + player.height / 2, player.width / 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Ajouter des yeux noirs
+            ctx.fillStyle = '#000';
+            ctx.beginPath();
+            ctx.arc(player.x + player.width / 2 - 10, player.y + player.height / 2 - 5, 5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(player.x + player.width / 2 + 10, player.y + player.height / 2 - 5, 5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // ctx.strokeStyle = '#fff';
+            // ctx.lineWidth = 2;
+            // ctx.stroke();
+        }
+
+        function drawPlatforms() {
+            platforms.forEach(platform => {
+                ctx.fillStyle = platform.color;
+                ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
+
+                // Ajouter des bordures pour un effet rétro
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(platform.x, platform.y, platform.width, platform.height);
+            });
+        }
+
+        function drawFlames() {
+            const flameColor = flameIntensity % 2 === 0 ? '#ff69b4' : '#ff99cc';
+            const flamePositions = [
+                { x: 50, y: canvas.height - 30 },
+                { x: 120, y: canvas.height - 35 },
+                { x: 190, y: canvas.height - 30 },
+                { x: 260, y: canvas.height - 35 },
+                { x: 330, y: canvas.height - 30 }
+            ];
+
+            flamePositions.forEach(pos => {
+                ctx.fillStyle = flameColor;
+                ctx.beginPath();
+                ctx.moveTo(pos.x, pos.y);
+                ctx.lineTo(pos.x - 5, pos.y - 15);
+                ctx.lineTo(pos.x + 5, pos.y - 15);
+                ctx.lineTo(pos.x, pos.y);
+                ctx.fill();
+            });
+        }
+
+        function update() {
+            player.velocityY += player.gravity * gameSpeed;
+            player.y += player.velocityY;
+            player.x += player.velocityX;
+
+            platforms.forEach(platform => {
+                platform.y += gameSpeed;
+
+                if (platform.y > canvas.height) {
+                    platform.y = -50;
+                    platform.x = Math.random() * (canvas.width - 50);
+                    platform.width = 50 + Math.random() * 100;
+                    score += 1;
+                }
+
+                if (player.x < platform.x + platform.width &&
+                    player.x + player.width > platform.x &&
+                    player.y < platform.y + platform.height &&
+                    player.y + player.height > platform.y) {
+                    player.velocityY = player.jumpStrength;
+                    player.y = platform.y - player.height;
+                }
+            });
+
+            flameIntensity++;
+
+            if (player.y > canvas.height) {
+                alert(`Game Over! Score: ${score}`);
+                document.location.reload();
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawPlatforms();
+            drawPlayer();
+            drawFlames();
+            ctx.fillStyle = '#fff';
+            ctx.fillText(`Score: ${score}`, 10, 20);
+        }
+
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        document.addEventListener('keydown', event => {
+            if (event.code === 'Space') {
+                player.velocityY = player.jumpStrength;
+            } else if (event.code === 'ArrowRight') {
+                player.velocityX = player.speed;
+            } else if (event.code === 'ArrowLeft') {
+                player.velocityX = -player.speed;
+            }
+        });
+
+        document.addEventListener('keyup', event => {
+            if (event.code === 'ArrowRight' || event.code === 'ArrowLeft') {
+                player.velocityX = 0;
+            }
+        });
+
+        generatePlatforms();
+        gameLoop();
+    </script>
+</body>
+</html>
