@@ -11,13 +11,12 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100vh;
+            height: 110vh;
             background-color: #000;
             margin: 0;
-            font-family: Arial, sans-serif;
-            color: #fff;
-            /* background-image: linear-gradient(to bottom, #000000, #0f0f0f); */
             font-family: 'Press Start 2P', cursive;
+            color: #fff;
+            padding: 10px;
         }
         #sudoku-container {
             display: flex;
@@ -26,9 +25,7 @@
             padding: 20px;
             background: #fff;
             border-radius: 10px;
-            /* box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2); */
             box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
-
         }
         #sudoku-grid {
             display: grid;
@@ -79,6 +76,7 @@
         .error, .victory {
             color: red;
             margin-top: 10px;
+            font-size: 10px;
         }
         .victory {
             color: green;
@@ -91,7 +89,7 @@
         }
         .options label {
             margin: 5px 0;
-            font-size: 13px;
+            font-size: 11px;
         }
         .options input[type="range"] {
             width: 200px;
@@ -115,7 +113,7 @@
         }
         footer {
             margin-top: 20px;
-            font-size: 10px;
+            font-size: 9px;
             color: #666;
             text-align: center;
         }
@@ -123,6 +121,33 @@
             color: #ffcc00;
             margin-top: 10px;
             font-size: 10px;
+        }
+        .completed-line, .completed-column {
+            position: absolute;
+            font-size: 24px;
+            color: #ffcc00;
+            /* animation: sparkle 1s infinite; */
+            animation: sparkle 2s;
+        }
+        @keyframes sparkle {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        @media (max-width: 600px) {
+            #sudoku-grid {
+                grid-template-columns: repeat(9, 40px);
+                grid-template-rows: repeat(9, 40px);
+            }
+            .cell {
+                font-size: 14px;
+            }
+            .color-option {
+                width: 25px;
+                height: 25px;
+            }
+            .options input[type="range"] {
+                width: 150px;
+            }
         }
     </style>
 </head>
@@ -142,6 +167,10 @@
         <label>
             Complétion automatique: <input type="range" id="completion-slider" min="10" max="80" value="10">
         </label>
+        <label>
+            <input type="checkbox" id="daltonian-mode">
+            Mode daltonien
+        </label>
         <div class="note">* Rafraîchissez la page pour appliquer le niveau de complétion automatique.</div>
     </div>
     <footer>
@@ -149,19 +178,20 @@
         <p>Les couleurs proviennent d'une <a href="https://cambiocteach.com/accessibility/colourchoice/" target="_blank">palette adapté au daltoninisme</a>.</p>
     </footer>
     <script>
-        const colors = ['#1f78b4', '#33a02c', '#e31a1c', '#ff7f00', '#6a3d9a', '#b15928', '#b2df8a', '#a6cee3', '#fdbf6f'];
-        const gridSize = 9;
+        const defaultColors = ['#33A8C7', '#52E3E1', '#A0E426', '#FDF148', '#FFAB00', '#F77976', '#F050AE', '#D883FF', '#9336FD'];
+        const daltonianColors = ['#1f78b4', '#33a02c', '#e31a1c', '#ff7f00', '#6a3d9a', '#b15928', '#b2df8a', '#a6cee3', '#fdbf6f'];
+        let currentColors = defaultColors;
         let selectedCell = null;
-        let grid = Array.from({ length: gridSize }, () => Array(gridSize).fill(0));
+        let grid = Array.from({ length: 9 }, () => Array(9).fill(0));
 
         function createGrid() {
             const gridElement = document.getElementById('sudoku-grid');
-            for (let row = 0; row < gridSize; row++) {
-                for (let col = 0; col < gridSize; col++) {
+            for (let row = 0; row < 9; row++) {
+                for (let col = 0; col < 9; col++) {
                     const cell = document.createElement('div');
                     cell.classList.add('cell');
-                    cell.dataset.index = row * gridSize + col;
-                    cell.addEventListener('click', () => selectCell(row * gridSize + col));
+                    cell.dataset.index = row * 9 + col;
+                    cell.addEventListener('click', () => selectCell(row * 9 + col));
                     gridElement.appendChild(cell);
                 }
             }
@@ -170,7 +200,7 @@
         function createColorPalette() {
             const palette = document.getElementById('color-palette');
             palette.innerHTML = ''; // Clear previous options
-            colors.forEach((color, index) => {
+            currentColors.forEach((color, index) => {
                 const colorOption = document.createElement('div');
                 colorOption.classList.add('color-option');
                 colorOption.style.backgroundColor = color;
@@ -193,15 +223,16 @@
 
         function placeColor(colorIndex) {
             if (selectedCell !== null) {
-                const row = Math.floor(selectedCell / gridSize);
-                const col = selectedCell % gridSize;
+                const row = Math.floor(selectedCell / 9);
+                const col = selectedCell % 9;
                 if (validCheck(grid, colorIndex + 1, [row, col])) {
                     grid[row][col] = colorIndex + 1;
                     updateGridDisplay();
                     checkVictory();
+                    checkCompletedLines();
                     selectedCell = null;
                 } else {
-                    document.getElementById('error-message').textContent = "🚨 Erreur : Les règles du Sudoku ne sont pas respectées. 🚨";
+                    showErrorMessage("🚨 Erreur : Les règles du Sudoku ne sont pas respectées. 🚨");
                 }
             }
         }
@@ -209,10 +240,10 @@
         function updateGridDisplay() {
             const cells = document.querySelectorAll('.cell');
             cells.forEach((cell, index) => {
-                const row = Math.floor(index / gridSize);
-                const col = index % gridSize;
+                const row = Math.floor(index / 9);
+                const col = index % 9;
                 const value = grid[row][col];
-                cell.style.backgroundColor = value ? colors[value - 1] : 'white';
+                cell.style.backgroundColor = value ? currentColors[value - 1] : 'white';
             });
         }
 
@@ -222,15 +253,56 @@
             }
         }
 
-        function findEmpty(board) {
-            for (let y = 0; y < board.length; y++) {
-                for (let x = 0; x < board[0].length; x++) {
-                    if (board[y][x] === 0) {
-                        return [y, x];
-                    }
+        function checkCompletedLines() {
+            const completedLines = [];
+            const completedColumns = [];
+
+            // Check rows
+            for (let row = 0; row < 9; row++) {
+                if (grid[row].every(cell => cell !== 0)) {
+                    completedLines.push(row);
                 }
             }
-            return null;
+
+            // Check columns
+            for (let col = 0; col < 9; col++) {
+                if (Array.from({ length: 9 }, (_, i) => grid[i][col]).every(cell => cell !== 0)) {
+                    completedColumns.push(col);
+                }
+            }
+
+            // Add sparkles for completed lines and columns
+            completedLines.forEach(row => {
+                const sparkle = document.createElement('div');
+                sparkle.classList.add('completed-line');
+                sparkle.style.top = `${row * (window.innerWidth < 600 ? 40 : 50) + 10}px`;
+                sparkle.style.left = '-20px';
+                sparkle.textContent = '✨';
+                document.getElementById('sudoku-grid').appendChild(sparkle);
+
+                const sparkleRight = document.createElement('div');
+                sparkleRight.classList.add('completed-line');
+                sparkleRight.style.top = `${row * (window.innerWidth < 600 ? 40 : 50) + 10}px`;
+                sparkleRight.style.right = '-20px';
+                sparkleRight.textContent = '✨';
+                document.getElementById('sudoku-grid').appendChild(sparkleRight);
+            });
+
+            completedColumns.forEach(col => {
+                const sparkle = document.createElement('div');
+                sparkle.classList.add('completed-column');
+                sparkle.style.left = `${col * (window.innerWidth < 600 ? 40 : 50) + 10}px`;
+                sparkle.style.top = '-20px';
+                sparkle.textContent = '✨';
+                document.getElementById('sudoku-grid').appendChild(sparkle);
+
+                const sparkleBottom = document.createElement('div');
+                sparkleBottom.classList.add('completed-column');
+                sparkleBottom.style.left = `${col * (window.innerWidth < 600 ? 40 : 50) + 10}px`;
+                sparkleBottom.style.bottom = '-20px';
+                sparkleBottom.textContent = '✨';
+                document.getElementById('sudoku-grid').appendChild(sparkleBottom);
+            });
         }
 
         function validCheck(board, number, coordinates) {
@@ -276,10 +348,21 @@
             return false;
         }
 
+        function findEmpty(board) {
+            for (let y = 0; y < board.length; y++) {
+                for (let x = 0; x < board[0].length; x++) {
+                    if (board[y][x] === 0) {
+                        return [y, x];
+                    }
+                }
+            }
+            return null;
+        }
+
         function deleteCells(board, number) {
             while (number > 0) {
-                const row = Math.floor(Math.random() * gridSize);
-                const col = Math.floor(Math.random() * gridSize);
+                const row = Math.floor(Math.random() * 9);
+                const col = Math.floor(Math.random() * 9);
                 if (board[row][col] !== 0) {
                     board[row][col] = 0;
                     number--;
@@ -297,25 +380,39 @@
             const palette = document.getElementById('color-palette');
             palette.innerHTML = ''; // Clear previous options
             if (document.getElementById('dynamic-colors').checked) {
-                const row = Math.floor(selectedCell / gridSize);
-                const col = selectedCell % gridSize;
+                const row = Math.floor(selectedCell / 9);
+                const col = selectedCell % 9;
                 const availableColors = [];
-                for (let i = 0; i < colors.length; i++) {
+                for (let i = 0; i < currentColors.length; i++) {
                     if (validCheck(grid, i + 1, [row, col])) {
-                        availableColors.push(colors[i]);
+                        availableColors.push(currentColors[i]);
                     }
                 }
                 availableColors.forEach(color => {
                     const colorOption = document.createElement('div');
                     colorOption.classList.add('color-option');
                     colorOption.style.backgroundColor = color;
-                    colorOption.addEventListener('click', () => placeColor(colors.indexOf(color)));
+                    colorOption.addEventListener('click', () => placeColor(currentColors.indexOf(color)));
                     palette.appendChild(colorOption);
                 });
             } else {
                 createColorPalette();
             }
         }
+
+        function showErrorMessage(message) {
+            const errorMessage = document.getElementById('error-message');
+            errorMessage.textContent = message;
+            setTimeout(() => {
+                errorMessage.textContent = '';
+            }, 3000); // Le message disparaît après 3 secondes
+        }
+
+        document.getElementById('daltonian-mode').addEventListener('change', () => {
+            currentColors = document.getElementById('daltonian-mode').checked ? daltonianColors : defaultColors;
+            updateGridDisplay();
+            createColorPalette();
+        });
 
         createGrid();
         createColorPalette();
