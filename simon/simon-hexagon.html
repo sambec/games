@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simon Hexagone</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #000;
+            margin: 0;
+            font-family: 'Press Start 2P', cursive;
+            color: #fff;
+        }
+        #simon-game {
+            position: relative;
+            width: 420px;
+            height: 500px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .simon-button {
+            position: absolute;
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: opacity 0.3s;
+            z-index: 2;
+        }
+        .simon-button:active {
+            transform: scale(0.9);
+        }
+        #start-button, #back-button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #ff69b4;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        #start-button:hover, #back-button:hover {
+            background-color: #e0598b;
+        }
+
+    </style>
+</head>
+<body>
+    <h1>Simon Hexagone</h1>
+    <div id="simon-game"></div>
+    <button id="start-button">Commencer</button>
+    <button id="back-button" onclick="window.location.href='simon.html'">Retour</button>
+
+    <script>
+        const colors = ['#33A8C7', '#52E3E1', '#A0E426', '#FDF148', '#FFAB00', '#F77976'];
+        const buttons = [];
+        const sequence = [];
+        let playerSequence = [];
+        let level = 1;
+
+        const gameContainer = document.getElementById('simon-game');
+        const positions = [
+            { top: '15%', left: '50%', transform: 'translateX(-50%)' },
+            { top: '35%', left: '85%', transform: 'translate(-50%, -50%)' },
+            { top: '65%', left: '85%', transform: 'translate(-50%, -50%)' },
+            { top: '85%', left: '50%', transform: 'translate(-50%, -50%)' },
+            { top: '65%', left: '15%', transform: 'translate(-50%, -50%)' },
+            { top: '35%', left: '15%', transform: 'translate(-50%, -50%)' }
+        ];
+
+        colors.forEach((color, index) => {
+            const button = document.createElement('div');
+            button.classList.add('simon-button');
+            button.style.backgroundColor = color;
+            button.style.top = positions[index].top;
+            button.style.left = positions[index].left;
+            button.style.transform = positions[index].transform;
+            button.dataset.index = index;
+            gameContainer.appendChild(button);
+            buttons.push(button);
+        });
+
+        function startGame() {
+            sequence.length = 0;
+            playerSequence.length = 0;
+            level = 1;
+            addToSequence();
+            playSequence();
+        }
+
+        function addToSequence() {
+            const randomIndex = Math.floor(Math.random() * buttons.length);
+            sequence.push(randomIndex);
+        }
+
+        function playSequence() {
+            let i = 0;
+            const interval = setInterval(() => {
+                if (i >= sequence.length) {
+                    clearInterval(interval);
+                    return;
+                }
+                blinkButton(buttons[sequence[i]]);
+                i++;
+            }, 800);
+        }
+
+        function blinkButton(button) {
+            button.style.opacity = '0.5';
+            setTimeout(() => button.style.opacity = '1', 300);
+        }
+
+        function checkPlayerSequence(index) {
+            playerSequence.push(index);
+            blinkButton(buttons[index]);
+            
+            for (let i = 0; i < playerSequence.length; i++) {
+                if (playerSequence[i] !== sequence[i]) {
+                    alert(`Game Over! Vous avez atteint le niveau ${level}`);
+                    document.location.reload();
+                    return;
+                }
+            }
+            
+            if (playerSequence.length === sequence.length) {
+                level++;
+                playerSequence.length = 0;
+                addToSequence();
+                setTimeout(playSequence, 1000);
+            }
+        }
+
+        document.getElementById('start-button').addEventListener('click', startGame);
+
+        buttons.forEach((button, index) => {
+            button.addEventListener('click', () => checkPlayerSequence(index));
+        });
+    </script>
+</body>
+</html>
