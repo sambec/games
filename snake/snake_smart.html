@@ -37,15 +37,35 @@
             margin-top: 20px;
         }
 
+        .controls button {
+            background-color: #ff69b4;
+            border: none;
+            color: #fff;
+            font-size: 1.5em;
+            padding: 10px;
+            cursor: pointer;
+            margin: 5px;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+
+        .controls button:active {
+            background-color: #e0598b;
+            transform: scale(0.9);
+        }
+
+        .controls button:hover {
+            background-color: #e0598b;
+        }
+
         .grid-toggle, .speed-control {
             margin-top: 10px;
         }
 
         footer {
             margin-top: 20px;
-            font-size: 9px;
-            color: #666;
-            text-align: center;
+            font-size: 0.8em;
+            color: #fff;
         }
     </style>
 </head>
@@ -53,9 +73,14 @@
     <h1>Snake</h1>
     <canvas width="400" height="400" id="game"></canvas>
     <div class="controls">
+        <button id="up">↑</button>
+        <div>
+            <button id="left">←</button>
+            <button id="down">↓</button>
+            <button id="right">→</button>
+        </div>
         <label class="speed-control">Vitesse: <input type="range" id="speed" min="1" max="10" value="4"></label>
         <label class="grid-toggle"><input type="checkbox" id="toggleGrid"> Afficher la grille</label>
-        <a href="snake_smart.html">Jouer sans clavier</a>
     </div>
     <footer>
         Inspiration du code de : <a href="https://gist.github.com/ZiKT1229/5935a10ce818ea7b851ea85ecf55b4da" target="_blank">Gist GitHub</a>
@@ -69,7 +94,7 @@
         var showGrid = false;
         var score = 0;
         var touchStartX, touchStartY;
-        var colors = ['#33A8C7', '#52E3E1', '#A0E426', '#FDF148', '#FFAB00', '#F77976', '#F050AE', '#D883FF', ];
+        var colors = ['#33A8C7', '#52E3E1', '#A0E426', '#FDF148', '#FFAB00', '#F77976', '#F050AE', '#D883FF'];
 
         var snake = { x: 160, y: 160, color:['#9336FD'], dx: grid, dy: 0, cells: [], maxCells: 4 };
         var apple = { x: 320, y: 320, color: colors[Math.floor(Math.random() * colors.length)] };
@@ -137,6 +162,34 @@
             } else if (e.which === 40 && snake.dy === 0) {
                 snake.dy = grid;
                 snake.dx = 0;
+            }
+        });
+
+        document.getElementById('up').addEventListener('click', () => {
+            if (snake.dy === 0) {
+                snake.dy = -grid;
+                snake.dx = 0;
+            }
+        });
+
+        document.getElementById('down').addEventListener('click', () => {
+            if (snake.dy === 0) {
+                snake.dy = grid;
+                snake.dx = 0;
+            }
+        });
+
+        document.getElementById('left').addEventListener('click', () => {
+            if (snake.dx === 0) {
+                snake.dx = -grid;
+                snake.dy = 0;
+            }
+        });
+
+        document.getElementById('right').addEventListener('click', () => {
+            if (snake.dx === 0) {
+                snake.dx = grid;
+                snake.dy = 0;
             }
         });
 
