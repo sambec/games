@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Puissance 4</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+        
+        body {
+            background-color: #000;
+            color: #fff;
+            text-align: center;
+            font-family: 'Press Start 2P', cursive;
+        }
+        h1 {
+            color: #fff;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(7, 60px);
+            gap: 5px;
+            background-color: #33A8C7;
+            padding: 10px;
+            border-radius: 10px;
+            margin: 20px auto;
+            width: fit-content;
+            position: relative;
+        }
+        .cell {
+            width: 60px;
+            height: 60px;
+            background-color: #52E3E1;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        .player1, .player2 {
+            animation: drop 0.5s ease-out;
+        }
+        .player1 { background-color: #F050AE; }
+        .player2 { background-color: #FFAB00; }
+
+        @keyframes drop {
+            from {
+                transform: translateY(-300px);
+            }
+            to {
+                transform: translateY(0);
+            }
+        }
+        
+    </style>
+</head>
+<body>
+    <h1>Puissance 4</h1>
+    <div class="grid" id="grid"></div>
+    <script>
+        const ROWS = 6, COLS = 7;
+        const grid = document.getElementById('grid');
+        let board = Array.from({ length: ROWS }, () => Array(COLS).fill(null));
+        let currentPlayer = 'X';
+        let gameActive = true;
+
+        function createGrid() {
+            grid.innerHTML = '';
+            gameActive = true;
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    let cell = document.createElement('div');
+                    cell.classList.add('cell');
+                    cell.dataset.row = r;
+                    cell.dataset.col = c;
+                    cell.addEventListener('click', handleMove);
+                    grid.appendChild(cell);
+                }
+            }
+        }
+
+        function handleMove(e) {
+            if (!gameActive) return;
+            let col = e.target.dataset.col;
+            for (let r = ROWS - 1; r >= 0; r--) {
+                if (!board[r][col]) {
+                    board[r][col] = currentPlayer;
+                    updateGrid(r, col);
+                    if (checkWin()) {
+                        gameActive = false;
+                        setTimeout(() => {
+                            alert(currentPlayer + ' a gagné !');
+                            matrixCrashEffect();
+                        }, 200);
+                        return;
+                    } else if (isDraw()) {
+                        gameActive = false;
+                        setTimeout(() => {
+                            alert('Match nul !');
+                            matrixCrashEffect();
+                        }, 200);
+                        return;
+                    } else {
+                        currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+                    }
+                    break;
+                }
+            }
+        }
+
+        function updateGrid(row, col) {
+            let cells = document.querySelectorAll('.cell');
+            let targetCell = [...cells].find(cell => cell.dataset.row == row && cell.dataset.col == col);
+            if (targetCell) {
+                targetCell.textContent = board[row][col];
+                targetCell.classList.add(board[row][col] === 'X' ? 'player1' : 'player2');
+            }
+        }
+
+        function checkWin() {
+            const directions = [
+                [0, 1], [1, 0], [1, 1], [1, -1]
+            ];
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    if (board[r][c]) {
+                        for (let [dr, dc] of directions) {
+                            let count = 1;
+                            for (let i = 1; i < 4; i++) {
+                                let nr = r + dr * i;
+                                let nc = c + dc * i;
+                                if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS && board[nr][nc] === board[r][c]) {
+                                    count++;
+                                } else {
+                                    break;
+                                }
+                            }
+                            if (count === 4) return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        function isDraw() {
+            return board.every(row => row.every(cell => cell !== null));
+        }
+        function matrixCrashEffect() {
+            document.querySelectorAll('.cell').forEach(cell => {
+                let randomX = (Math.random() - 0.5) * 1000;
+                let randomY = (Math.random() * 800) + 500;
+                let randomRotation = (Math.random() - 0.5) * 720;
+                cell.style.transition = 'transform 1.5s ease-in-out, opacity 1.5s ease-in-out';
+                cell.style.transform = `translate(${randomX}px, ${randomY}px) rotate(${randomRotation}deg)`;
+                cell.style.opacity = '0';
+            });
+            setTimeout(resetGame, 1500);
+        }
+        function resetGame() {
+            board = Array.from({ length: ROWS }, () => Array(COLS).fill(null));
+            currentPlayer = 'X';
+            createGrid();
+        }
+
+        createGrid();
+    </script>
+</body>
+</html>
