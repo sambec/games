@@ -168,20 +168,20 @@
     <div class="options">
         <label>
             <input type="checkbox" id="dynamic-colors">
-            Un peu d'aide
+            A little help
         </label>
         <label>
-            Complétion automatique: <input type="range" id="completion-slider" min="10" max="80" value="10">
+            Autocomplete : <input type="range" id="completion-slider" min="10" max="80" value="10">
         </label>
         <label>
             <input type="checkbox" id="daltonian-mode">
-            Mode daltonien
+            Colorblind mode
         </label>
-        <div class="note">* Rafraîchissez la page pour appliquer le niveau de complétion automatique.</div>
+        <div class="note">* Refresh the page to apply the autocomplete level</div>
     </div>
     <footer>
-        <p>Inspiré du code de <a href="https://github.com/David-Elkabas/Sudoku/blob/master/sudokuGenerator.py" target="_blank">David Elkabas</a></p>
-        <p>Les couleurs proviennent d'une <a href="https://cambiocteach.com/accessibility/colourchoice/" target="_blank">palette adapté au daltoninisme</a>.</p>
+        <p>Inspired by the code of <a href="https://github.com/David-Elkabas/Sudoku/blob/master/sudokuGenerator.py" target="_blank">David Elkabas</a></p>
+        <p>The colors come from a <a href="https://cambiocteach.com/accessibility/colourchoice/" target="_blank">palette suitable for color blindness</a>.</p>
     </footer>
     <script>
         const defaultColors = ['#33A8C7', '#52E3E1', '#A0E426', '#FDF148', '#FFAB00', '#F77976', '#F050AE', '#D883FF', '#9336FD'];
@@ -238,7 +238,7 @@
                     checkCompletedLines();
                     selectedCell = null;
                 } else {
-                    showErrorMessage("🚨 Erreur : Les règles du Sudoku ne sont pas respectées. 🚨");
+                    showErrorMessage("🚨 Error: Sudoku rules are not respected 🚨");
                 }
             }
         }
@@ -255,7 +255,7 @@
 
         function checkVictory() {
             if (grid.every(row => row.every(cell => cell !== 0))) {
-                document.getElementById('victory-message').textContent = "Bravo, c'est gagné ! 🎉";
+                document.getElementById('victory-message').textContent = "Bravo ! 🎉";
             }
         }
 

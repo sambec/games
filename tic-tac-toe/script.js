@@ -10,10 +10,10 @@ function handleCellClick(event) {
     if (cell.textContent === '') {
         cell.textContent = currentPlayer;
         if (checkWin()) {
-            alert(currentPlayer + ' a gagné !');
+            alert(currentPlayer + ' win ! 🎉');
             resetGame();
         } else if (isDraw()) {
-            alert('Match nul !');
+            alert('Stalemate !');
             resetGame();
         } else {
             currentPlayer = currentPlayer === 'X' ? 'O' : 'X';

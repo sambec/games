@@ -102,20 +102,20 @@
 </head>
 <body>
     <button class="music-control" onclick="toggleMusic()">🔇</button>
-    <h1>Choisissez votre prochain jeu</h1>
+    <h1>Choose your next game</h1>
     <ul class="game-list">
         <!-- <li><a href="tic-tac-toe/tic-tac-toe.html">♟️Jouer au Tic Tac Toe🧩</a></li>
         <li><a href="bataille/bataille.html">♠️Jouer à la bataille♦️</a></li>
         <li><a href="doodle-jump/doodle-jump.html">🕹️Jouer à Doodle Jump👾</a></li>
         <li><a href="sudoku/sudoku.html">🎱Jouer au Sudoku🎰</a></li> -->
-        <li><a href="tic-tac-toe/tic-tac-toe.html" class="vibrate">Jouer au Tic Tac Toe</a></li>
-        <li><a href="bataille/bataille.html" class="vibrate">Jouer à la bataille</a></li>
+        <li><a href="tic-tac-toe/tic-tac-toe.html" class="vibrate">Tic Tac Toe</a></li>
+        <li><a href="bataille/bataille.html" class="vibrate">La bataille</a></li>
         <!-- <li><a href="doodle-jump/doodle-jump.html" class="vibrate">Jouer à Doodle Jump</a></li> -->
-        <li><a href="sudoku/sudoku.html" class="vibrate">Jouer au Sudoku</a></li>
-        <li><a href="simon/simon.html" class="vibrate">Jouer au Simon</a></li>
-        <li><a href="snake/snake.html" class="vibrate">Jouer au Snake</a></li>
-        <li><a href="4x4/4x4.html" class="vibrate">Jouer au Puissance 4</a></li>
-        <li><a href="breakout/breakout.html" class="vibrate">Jouer au Casse brique</a></li>
+        <li><a href="sudoku/sudoku.html" class="vibrate">Sudoku</a></li>
+        <li><a href="simon/simon.html" class="vibrate">Simon</a></li>
+        <li><a href="snake/snake.html" class="vibrate">Snake</a></li>
+        <li><a href="4x4/4x4.html" class="vibrate">Puissance 4</a></li>
+        <li><a href="breakout/breakout.html" class="vibrate">Breakout</a></li>
 
 
 
@@ -123,7 +123,7 @@
     </ul>
     <audio id="background-music" autoplay loop>
         <source src="utils/music.mp3" type="audio/mpeg">
-        Votre navigateur ne supporte pas l'élément audio.
+        You can't hear the music ?
     </audio>
     <script>
         function toggleMusic() {
@@ -144,7 +144,7 @@
             audio.play().catch(error => {
                 console.error("Autoplay prevented:", error);
                 // Si l'autoplay est bloqué, vous pouvez informer l'utilisateur
-                alert("La musique est désactivée par défaut. Cliquez sur l'icône de son pour l'activer.");
+                alert("🎵Music is disabled by default. Click on the sound icon to enable it !🎶 ");
             });
         });
     </script>

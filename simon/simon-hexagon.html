@@ -56,8 +56,8 @@
 <body>
     <h1>Simon Hexagone</h1>
     <div id="simon-game"></div>
-    <button id="start-button">Commencer</button>
-    <button id="back-button" onclick="window.location.href='simon.html'">Retour</button>
+    <button id="start-button">Start</button>
+    <button id="back-button" onclick="window.location.href='simon.html'">Back</button>
 
     <script>
         const colors = ['#33A8C7', '#52E3E1', '#A0E426', '#FDF148', '#FFAB00', '#F77976'];
@@ -124,7 +124,7 @@
             
             for (let i = 0; i < playerSequence.length; i++) {
                 if (playerSequence[i] !== sequence[i]) {
-                    alert(`Game Over! Vous avez atteint le niveau ${level}`);
+                    alert(`Game Over! You have reached the level ${level}`);
                     document.location.reload();
                     return;
                 }
