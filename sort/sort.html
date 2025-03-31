@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ball Sort Puzzle</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #f0f0f0 25%, #cce7ff 25%, #cce7ff 50%, #f0f0f0 50%, #f0f0f0 75%, #cce7ff 75%, #cce7ff 100%);
+            font-family: 'Arial', sans-serif;
+        }
+
+        #gameContainer {
+            display: flex;
+            justify-content: space-around;
+            width: 80%;
+            max-width: 600px;
+        }
+
+        .tube {
+            width: 100px;
+            height: 400px;
+            border: 2px solid #000;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column-reverse;
+            align-items: center;
+            overflow: hidden;
+            cursor: pointer;
+            background-color: rgba(255, 255, 255, 0.8);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .ball {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin: 5px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s;
+        }
+
+        .ball:hover {
+            transform: scale(1.1);
+        }
+
+        #controls {
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            background-color: #33A8C7;
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #2a8bbd;
+        }
+
+        #message {
+            margin-top: 20px;
+            font-size: 24px;
+            color: green;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <!-- Les tubes seront générés ici -->
+    </div>
+    <div id="controls">
+        <button id="restartButton">Restart Level</button>
+        <button id="addTubeButton">Add Extra Tube</button>
+    </div>
+    <div id="message"></div>
+    <script>
+        const gameContainer = document.getElementById('gameContainer');
+        const restartButton = document.getElementById('restartButton');
+        const addTubeButton = document.getElementById('addTubeButton');
+        const message = document.getElementById('message');
+
+        const colors = ['#FFAB00', '#52E3E1', '#33A8C7', '#F050AE', '#D883FF'];
+        let tubes = [];
+        let selectedTube = null;
+
+        function createTube() {
+            const tube = document.createElement('div');
+            tube.className = 'tube';
+            tube.addEventListener('click', () => handleTubeClick(tube));
+            gameContainer.appendChild(tube);
+            tubes.push(tube);
+        }
+
+        function createBall(color) {
+            const ball = document.createElement('div');
+            ball.className = 'ball';
+            ball.style.backgroundColor = color;
+            return ball;
+        }
+
+        function handleTubeClick(tube) {
+            if (selectedTube && selectedTube !== tube) {
+                const ball = selectedTube.lastElementChild;
+                if (ball) {
+                    tube.appendChild(ball);
+                    selectedTube = null;
+                    checkWinCondition();
+                }
+            } else {
+                selectedTube = tube;
+            }
+        }
+
+        function initializeGame() {
+            tubes.forEach(tube => gameContainer.removeChild(tube));
+            tubes = [];
+            selectedTube = null;
+            message.textContent = '';
+
+            for (let i = 0; i < 5; i++) {
+                createTube();
+            }
+
+            for (let i = 0; i < 20; i++) {
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                const ball = createBall(color);
+                tubes[Math.floor(Math.random() * tubes.length)].appendChild(ball);
+            }
+        }
+
+        function addExtraTube() {
+            createTube();
+        }
+
+        function checkWinCondition() {
+            for (let tube of tubes) {
+                let balls = tube.children;
+                if (balls.length > 0) {
+                    let firstColor = balls[0].style.backgroundColor;
+                    for (let ball of balls) {
+                        if (ball.style.backgroundColor !== firstColor) {
+                            return;
+                        }
+                    }
+                }
+            }
+            message.textContent = 'Vous avez gagné !';
+        }
+
+        restartButton.addEventListener('click', initializeGame);
+        addTubeButton.addEventListener('click', addExtraTube);
+
+        initializeGame();
+    </script>
+</body>
+</html>
