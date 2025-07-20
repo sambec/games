@@ -62,6 +62,12 @@
     <button id="switch-button" onclick="window.location.href='simon-hexagon.html'">Play with 6 colours</button>
 
     <script>
+        const sounds = {
+            '1': new Audio('sound1.mp3'),
+            '2': new Audio('sound2.mp3'),
+            '3': new Audio('sound3.mp3'),
+            '4': new Audio('sound4.mp3')
+        };
         const buttons = {
             '1': document.getElementById('button-1'),
             '2': document.getElementById('button-2'),
@@ -99,12 +105,22 @@
             }, 800);
         }
 
-        function blinkButton(button) {
-            button.style.opacity = '0.5';
-            setTimeout(() => {
-                button.style.opacity = '1';
-            }, 300);
-        }
+        // function blinkButton(button) {
+        //     button.style.opacity = '0.5';
+        //     setTimeout(() => {
+        //         button.style.opacity = '1';
+        //     }, 300);
+        // }
+
+            function blinkButton(button) {
+        const color = button.id.split('-')[1];
+        button.style.opacity = '0.5';
+        sounds[color].currentTime = 0; // Réinitialise le son
+        sounds[color].play(); // Joue le son
+        setTimeout(() => {
+            button.style.opacity = '1';
+        }, 300);
+      }
 
         function checkPlayerSequence() {
             if (JSON.stringify(playerSequence) === JSON.stringify(sequence)) {
