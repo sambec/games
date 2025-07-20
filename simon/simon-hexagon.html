@@ -50,7 +50,6 @@
         #start-button:hover, #back-button:hover {
             background-color: #e0598b;
         }
-
     </style>
 </head>
 <body>
@@ -60,6 +59,15 @@
     <button id="back-button" onclick="window.location.href='simon.html'">Back</button>
 
     <script>
+        const sounds = {
+            0: new Audio('F1.mp3'),
+            1: new Audio('F2.mp3'),
+            2: new Audio('F3.mp3'),
+            3: new Audio('F4.mp3'),
+            4: new Audio('F5.mp3'),
+            5: new Audio('F6.mp3')
+        };
+
         const colors = ['#33A8C7', '#52E3E1', '#A0E426', '#FDF148', '#FFAB00', '#F77976'];
         const buttons = [];
         const sequence = [];
@@ -101,6 +109,18 @@
             sequence.push(randomIndex);
         }
 
+        function blinkButton(button) {
+            const index = parseInt(button.dataset.index);
+            button.style.opacity = '0.5';
+            if (sounds[index]) {
+                sounds[index].currentTime = 0;
+                sounds[index].play();
+            }
+            setTimeout(() => {
+                button.style.opacity = '1';
+            }, 300);
+        }
+
         function playSequence() {
             let i = 0;
             const interval = setInterval(() => {
@@ -113,18 +133,13 @@
             }, 800);
         }
 
-        function blinkButton(button) {
-            button.style.opacity = '0.5';
-            setTimeout(() => button.style.opacity = '1', 300);
-        }
-
         function checkPlayerSequence(index) {
             playerSequence.push(index);
             blinkButton(buttons[index]);
             
             for (let i = 0; i < playerSequence.length; i++) {
                 if (playerSequence[i] !== sequence[i]) {
-                    alert(`Game Over! You have reached the level ${level}`);
+                    alert(`Game Over! You reached level ${level}`);
                     document.location.reload();
                     return;
                 }
