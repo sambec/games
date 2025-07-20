@@ -177,6 +177,11 @@
             <input type="checkbox" id="daltonian-mode">
             Colorblind mode
         </label>
+        <label>
+            <input type="checkbox" id="number-mode">
+            Number mode
+        </label>
+
         <div class="note">* Refresh the page to apply the autocomplete level</div>
     </div>
     <footer>
@@ -184,12 +189,16 @@
         <p>The colors come from a <a href="https://cambiocteach.com/accessibility/colourchoice/" target="_blank">palette suitable for color blindness</a>.</p>
     </footer>
     <script>
+        let numberMode = false;
+
         const defaultColors = ['#33A8C7', '#52E3E1', '#A0E426', '#FDF148', '#FFAB00', '#F77976', '#F050AE', '#D883FF', '#9336FD'];
         const daltonianColors = ['#1f78b4', '#33a02c', '#e31a1c', '#ff7f00', '#6a3d9a', '#b15928', '#b2df8a', '#a6cee3', '#fdbf6f'];
         let currentColors = defaultColors;
         let selectedCell = null;
         let grid = Array.from({ length: 9 }, () => Array(9).fill(0));
 
+
+        
         function createGrid() {
             const gridElement = document.getElementById('sudoku-grid');
             for (let row = 0; row < 9; row++) {
@@ -203,17 +212,29 @@
             }
         }
 
-        function createColorPalette() {
-            const palette = document.getElementById('color-palette');
-            palette.innerHTML = ''; // Clear previous options
-            currentColors.forEach((color, index) => {
-                const colorOption = document.createElement('div');
-                colorOption.classList.add('color-option');
-                colorOption.style.backgroundColor = color;
-                colorOption.addEventListener('click', () => placeColor(index));
-                palette.appendChild(colorOption);
-            });
-        }
+            function createColorPalette() {
+                const palette = document.getElementById('color-palette');
+                palette.innerHTML = '';
+                for (let i = 0; i < 9; i++) {
+                    const option = document.createElement('div');
+                    option.classList.add('color-option');
+                    if (numberMode) {
+                        option.textContent = i + 1;
+                        option.style.display = 'flex';
+                        option.style.alignItems = 'center';
+                        option.style.justifyContent = 'center';
+                        option.style.fontSize = '14px';
+                        option.style.backgroundColor = '#fff';
+                        option.style.color = '#000';
+                        option.style.border = '1px solid #000';
+                    } else {
+                        option.style.backgroundColor = currentColors[i];
+                    }
+                    option.addEventListener('click', () => placeColor(i));
+                    palette.appendChild(option);
+                }
+            }
+
 
         function selectCell(index) {
             const cells = document.querySelectorAll('.cell');
@@ -243,15 +264,30 @@
             }
         }
 
-        function updateGridDisplay() {
+                function updateGridDisplay() {
             const cells = document.querySelectorAll('.cell');
             cells.forEach((cell, index) => {
                 const row = Math.floor(index / 9);
                 const col = index % 9;
                 const value = grid[row][col];
-                cell.style.backgroundColor = value ? currentColors[value - 1] : 'white';
+                if (value) {
+                    if (numberMode) {
+                        cell.textContent = value;
+                        cell.style.backgroundColor = 'white';
+                        cell.style.color = '#000';
+                    } else {
+                        cell.textContent = '';
+                        cell.style.backgroundColor = currentColors[value - 1];
+                        cell.style.color = '';
+                    }
+                } else {
+                    cell.textContent = '';
+                    cell.style.backgroundColor = 'white';
+                    cell.style.color = '';
+                }
             });
         }
+
 
         function checkVictory() {
             if (grid.every(row => row.every(cell => cell !== 0))) {
@@ -384,27 +420,35 @@
 
         function updateColorOptions() {
             const palette = document.getElementById('color-palette');
-            palette.innerHTML = ''; // Clear previous options
+            palette.innerHTML = '';
             if (document.getElementById('dynamic-colors').checked) {
                 const row = Math.floor(selectedCell / 9);
                 const col = selectedCell % 9;
-                const availableColors = [];
-                for (let i = 0; i < currentColors.length; i++) {
+                for (let i = 0; i < 9; i++) {
                     if (validCheck(grid, i + 1, [row, col])) {
-                        availableColors.push(currentColors[i]);
+                        const option = document.createElement('div');
+                        option.classList.add('color-option');
+                        if (numberMode) {
+                            option.textContent = i + 1;
+                            option.style.display = 'flex';
+                            option.style.alignItems = 'center';
+                            option.style.justifyContent = 'center';
+                            option.style.fontSize = '14px';
+                            option.style.backgroundColor = '#fff';
+                            option.style.color = '#000';
+                            option.style.border = '1px solid #000';
+                        } else {
+                            option.style.backgroundColor = currentColors[i];
+                        }
+                        option.addEventListener('click', () => placeColor(i));
+                        palette.appendChild(option);
                     }
                 }
-                availableColors.forEach(color => {
-                    const colorOption = document.createElement('div');
-                    colorOption.classList.add('color-option');
-                    colorOption.style.backgroundColor = color;
-                    colorOption.addEventListener('click', () => placeColor(currentColors.indexOf(color)));
-                    palette.appendChild(colorOption);
-                });
             } else {
                 createColorPalette();
             }
         }
+
 
         function showErrorMessage(message) {
             const errorMessage = document.getElementById('error-message');
@@ -419,6 +463,13 @@
             updateGridDisplay();
             createColorPalette();
         });
+
+        document.getElementById('number-mode').addEventListener('change', (e) => {
+            numberMode = e.target.checked;
+            updateGridDisplay();
+            updateColorOptions();
+        });
+
 
         createGrid();
         createColorPalette();
