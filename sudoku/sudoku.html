@@ -181,6 +181,25 @@
             <input type="checkbox" id="number-mode">
             Number mode
         </label>
+        <!-- <button id="undo-button" style="margin-top: 10px; padding: 5px 10px; font-family: 'Press Start 2P', cursive; font-size: 10px; cursor: pointer;">UNDO</button> -->
+    <button id="undo-button" style="
+        margin-top: 10px;
+        padding: 8px 15px;
+        font-family: 'Press Start 2P', cursive;
+        font-size: 12px;
+        cursor: pointer;
+        background-color: #ffcc00;
+        color: #000;
+        border: 3px solid #000;
+        border-radius: 5px;
+        box-shadow: 0 4px 0 #d9b300, 0 6px 0 #000;
+        transition: all 0.1s;
+        outline: none;
+        position: relative;
+        top: 0;
+    ">
+        UNDO
+    </button>
 
         <div class="note">* Refresh the page to apply the autocomplete level</div>
     </div>
@@ -449,6 +468,43 @@
             }
         }
 
+        let actionStack = []; // Stack to store user actions
+
+        function placeColor(colorIndex) {
+            if (selectedCell !== null) {
+                const row = Math.floor(selectedCell / 9);
+                const col = selectedCell % 9;
+                const previousValue = grid[row][col];
+                if (validCheck(grid, colorIndex + 1, [row, col])) {
+                    // Push the action to the stack
+                    actionStack.push({
+                        row: row,
+                        col: col,
+                        previousValue: previousValue,
+                        newValue: colorIndex + 1
+                    });
+                    grid[row][col] = colorIndex + 1;
+                    updateGridDisplay();
+                    checkVictory();
+                    checkCompletedLines();
+                    selectedCell = null;
+                } else {
+                    showErrorMessage("🚨 Error: Sudoku rules are not respected 🚨");
+                }
+            }
+        }
+
+        function undoLastAction() {
+            if (actionStack.length > 0) {
+                const lastAction = actionStack.pop();
+                grid[lastAction.row][lastAction.col] = lastAction.previousValue;
+                updateGridDisplay();
+                checkVictory();
+                checkCompletedLines();
+            } else {
+                showErrorMessage("Nothing to undo!");
+            }
+        }
 
         function showErrorMessage(message) {
             const errorMessage = document.getElementById('error-message');
@@ -470,11 +526,14 @@
             updateColorOptions();
         });
 
+        document.getElementById('undo-button').addEventListener('click', undoLastAction);
 
         createGrid();
         createColorPalette();
         sudokuGenerate(grid, 1); // Génère une grille remplie à 98%
         updateGridDisplay();
+
+        
     </script>
 </body>
 </html>
