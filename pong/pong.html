@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pong</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #000;
+            font-family: 'Press Start 2P', cursive;
+            color: #fff;
+            overflow: hidden;
+            touch-action: none;
+        }
+        #game-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            height: 400px;
+            background-color: #111;
+            border: 6px solid #fff;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        #paddle-left, #paddle-right {
+            position: absolute;
+            width: 15px;
+            height: 80px;
+            background-color: #fff;
+        }
+        #paddle-left {
+            left: 10px;
+        }
+        #paddle-right {
+            right: 10px;
+        }
+        #ball {
+            position: absolute;
+            width: 15px;
+            height: 15px;
+            background-color: #fff;
+            border-radius: 50%;
+        }
+        #score {
+            font-size: 20px;
+            margin-bottom: 10px;
+            color: #ffcc00;
+        }
+        #slider-container {
+            width: 100%;
+            max-width: 600px;
+            margin-bottom: 10px;
+            display: none;
+        }
+        #paddle-slider {
+            width: 100%;
+        }
+        .options {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 10px;
+            font-size: 12px;
+        }
+        .options label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        @media (max-width: 600px) {
+            #slider-container {
+                display: block;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>PONG</h1>
+    <div id="score">0 - 0</div>
+    <div id="game-container">
+        <div id="paddle-left"></div>
+        <div id="paddle-right"></div>
+        <div id="ball"></div>
+    </div>
+    <div id="slider-container">
+        <input type="range" id="paddle-slider" min="0" max="100" value="50">
+    </div>
+    <div class="options">
+        <label>
+            <input type="checkbox" id="ai-toggle" checked> Play vs AI
+        </label>
+    </div>
+    <script>
+      // Game elements
+const gameContainer = document.getElementById('game-container');
+const paddleLeft = document.getElementById('paddle-left');
+const paddleRight = document.getElementById('paddle-right');
+const ball = document.getElementById('ball');
+const scoreDisplay = document.getElementById('score');
+const slider = document.getElementById('paddle-slider');
+const aiToggle = document.getElementById('ai-toggle');
+
+// Game state
+let leftScore = 0;
+let rightScore = 0;
+let ballX = 300;
+let ballY = 200;
+let ballSpeedX = 3;
+let ballSpeedY = 3;
+let leftPaddleY = 160;
+let rightPaddleY = 160;
+let gameRunning = true;
+let useAI = true;
+let keys = {};
+let aiDifficulty = 0.7; // Difficulté initiale
+
+// Initialize game
+function init() {
+    paddleLeft.style.top = leftPaddleY + 'px';
+    paddleRight.style.top = rightPaddleY + 'px';
+    ball.style.left = ballX + 'px';
+    ball.style.top = ballY + 'px';
+
+    document.addEventListener('keydown', (e) => keys[e.key] = true);
+    document.addEventListener('keyup', (e) => keys[e.key] = false);
+    slider.addEventListener('input', handleSlider);
+    aiToggle.addEventListener('change', toggleAI);
+
+    requestAnimationFrame(gameLoop);
+}
+
+// Game loop
+function gameLoop() {
+    if (!gameRunning) return;
+
+    // Handle keyboard input
+    if (keys['z'] && leftPaddleY > 0) leftPaddleY -= 7;
+    if (keys['s'] && leftPaddleY < gameContainer.offsetHeight - 80) leftPaddleY += 7;
+    if (!useAI) {
+        if (keys['ArrowUp'] && rightPaddleY > 0) rightPaddleY -= 7;
+        if (keys['ArrowDown'] && rightPaddleY < gameContainer.offsetHeight - 80) rightPaddleY += 7;
+    }
+
+    // Move ball
+    ballX += ballSpeedX;
+    ballY += ballSpeedY;
+
+    // Ball collision with top and bottom
+    if (ballY <= 0 || ballY >= gameContainer.offsetHeight - 15) {
+        ballSpeedY = -ballSpeedY;
+    }
+
+    // Ball collision with paddles
+    if (
+        ballX <= 25 &&
+        ballY + 15 >= leftPaddleY &&
+        ballY <= leftPaddleY + 80
+    ) {
+        ballSpeedX = -ballSpeedX;
+    }
+    if (
+        ballX >= gameContainer.offsetWidth - 35 &&
+        ballY + 15 >= rightPaddleY &&
+        ballY <= rightPaddleY + 80
+    ) {
+        ballSpeedX = -ballSpeedX;
+    }
+
+    // Ball out of bounds (score)
+    if (ballX <= 0) {
+        rightScore++;
+        updateScore();
+        resetBall();
+    }
+    if (ballX >= gameContainer.offsetWidth) {
+        leftScore++;
+        updateScore();
+        resetBall();
+    }
+
+    // IA pour la palette droite (si activée)
+    if (useAI) {
+        const aiPaddleCenter = rightPaddleY + 40;
+        const targetY = ballY - 20 + Math.random() * 40; // Cible aléatoire
+
+        if (Math.random() < 0.1) {
+            // Rate la balle (ne bouge pas)
+        } else {
+            if (aiPaddleCenter < targetY - 10) {
+                rightPaddleY += 3 + aiDifficulty * 3;
+            } else if (aiPaddleCenter > targetY + 10) {
+                rightPaddleY -= 3 + aiDifficulty * 3;
+            }
+        }
+
+        // Garde la palette dans les limites
+        if (rightPaddleY < 0) rightPaddleY = 0;
+        if (rightPaddleY > gameContainer.offsetHeight - 80) rightPaddleY = gameContainer.offsetHeight - 80;
+
+        // Ajuste la difficulté
+        if (rightScore - leftScore >= 2) {
+            aiDifficulty = Math.min(aiDifficulty + 0.1, 1);
+        } else if (leftScore - rightScore >= 2) {
+            aiDifficulty = Math.max(aiDifficulty - 0.1, 0.3);
+        }
+    }
+
+    // Update positions
+    paddleLeft.style.top = leftPaddleY + 'px';
+    paddleRight.style.top = rightPaddleY + 'px';
+    ball.style.left = ballX + 'px';
+    ball.style.top = ballY + 'px';
+
+    requestAnimationFrame(gameLoop);
+}
+
+// Handle touch slider
+function handleSlider() {
+    const sliderValue = parseInt(slider.value);
+    leftPaddleY = (sliderValue / 100) * (gameContainer.offsetHeight - 80);
+}
+
+// Toggle AI
+function toggleAI() {
+    useAI = aiToggle.checked;
+}
+
+// Reset ball
+function resetBall() {
+    ballX = 300;
+    ballY = 200;
+    ballSpeedX = -ballSpeedX;
+    ballSpeedY = 3;
+}
+
+// Update score
+function updateScore() {
+    scoreDisplay.textContent = leftScore + ' - ' + rightScore;
+}
+
+// Start the game
+init();
+
+
+
+    </script>
+</body>
+</html>

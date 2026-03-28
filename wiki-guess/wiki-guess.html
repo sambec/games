@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Guess The Article</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+
+body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #000;
+  color: #fff;
+  font-family: 'Press Start 2P', cursive;
+  min-height: 100vh;
+  padding-bottom: 40px;
+}
+
+/* ── Header ── */
+header {
+  text-align:center;
+  padding:1.4rem 1rem .7rem;
+  margin-bottom:1rem;
+  width: 100%;
+}
+header h1 {
+  font-size: 1.6rem;
+  letter-spacing: .04em;
+  text-shadow: 0 0 20px rgba(255,255,255,0.5), 3px 3px 0 #333;
+}
+header p {
+  color: #aaa;
+  font-size: .48rem;
+  margin-top: .55rem;
+  line-height: 2;
+}
+
+/* ── Controls row ── */
+.controls {
+  display:flex; flex-wrap:wrap; justify-content:center;
+  gap:1rem; margin-bottom:.9rem; padding:0 1rem;
+  align-items:center;
+}
+.control-item {
+  display:flex; align-items:center; gap:.5rem;
+  font-size:.48rem; color:#aaa; user-select:none;
+}
+.switch { position:relative; display:inline-block; width:38px; height:22px; cursor:pointer; }
+.switch input { opacity:0; width:0; height:0; }
+.slider {
+  position:absolute; inset:0; background:#333;
+  border-radius:22px; transition:background .25s;
+  border: 2px solid #555;
+}
+.slider::before {
+  content:''; position:absolute; width:14px; height:14px;
+  left:2px; bottom:2px; background:#fff; border-radius:50%;
+  transition:transform .25s; box-shadow:0 1px 3px rgba(0,0,0,.5);
+}
+input:checked + .slider { background:#ffcc00; border-color:#d9b300; }
+input:checked + .slider::before { transform:translateX(16px); background:#000; }
+
+/* Category pills */
+.category-group {
+  display:flex; flex-wrap:wrap; gap:.5rem;
+  justify-content:center; margin-bottom:1rem; padding:0 1rem;
+}
+.cat-pill {
+  padding:.4rem .8rem;
+  border: 3px solid #333;
+  border-radius: 4px;
+  font-size:.42rem;
+  cursor:pointer;
+  background: #111;
+  color: #aaa;
+  font-family: 'Press Start 2P', cursive;
+  transition:all .15s;
+  user-select:none;
+  box-shadow: 2px 2px 0 #222;
+}
+.cat-pill:hover { border-color:#ffcc00; color:#ffcc00; }
+.cat-pill.active {
+  background: #ffcc00;
+  color: #000;
+  border-color: #000;
+  box-shadow: 2px 2px 0 #d9b300, 3px 4px 0 #000;
+}
+
+/* ── Main layout ── */
+main {
+  display:flex; justify-content:center; gap:1rem;
+  flex-wrap:wrap; padding:0 .5rem; align-items:flex-start;
+  width: 100%;
+}
+
+/* ── Panels ── */
+.panel {
+  background: #fff;
+  border: 3px solid #000;
+  border-radius: 6px;
+  padding: .7rem .8rem;
+  min-width: 100px;
+  box-shadow: 0 0 10px rgba(255,255,255,0.1), 4px 4px 0 #333;
+  color: #000;
+}
+.panel h2 {
+  font-size:.42rem;
+  text-transform:uppercase;
+  letter-spacing:.1em;
+  color:#555;
+  margin-bottom:.4rem;
+}
+.panel .val {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #000;
+}
+.panel .val.sm { font-size:.75rem; }
+
+/* Score delta animation */
+@keyframes delta-up {
+  0%   { opacity:1; transform:translateY(0) scale(1); }
+  100% { opacity:0; transform:translateY(-30px) scale(1.3); }
+}
+.delta {
+  display:inline-block;
+  font-family:'Press Start 2P', cursive;
+  font-size:.65rem; font-weight:700;
+  color:#A0E426;
+  text-shadow: 1px 1px 0 #000;
+  animation:delta-up .9s ease forwards;
+  margin-left:.4rem;
+}
+
+/* ── Game card ── */
+.game-card {
+  background: #fff;
+  border: 3px solid #000;
+  border-radius: 8px;
+  padding: 1.2rem 1.4rem;
+  max-width: 580px;
+  width: 100%;
+  box-shadow: 0 0 20px rgba(255,255,255,0.2), 6px 6px 0 #333;
+  color: #000;
+}
+
+/* Clue progress bar */
+.clue-progress {
+  display:flex; gap:4px; margin-bottom:1rem;
+}
+.clue-dot {
+  flex:1; height:8px; border-radius:2px;
+  background:#ddd;
+  border: 1px solid #bbb;
+  transition:background .4s;
+}
+.clue-dot.revealed { background:#33A8C7; border-color:#2290ad; }
+.clue-dot.current  { background:#ffcc00; border-color:#d9b300; }
+
+/* Timer ring */
+.timer-wrap {
+  display:flex; align-items:center; gap:.8rem; margin-bottom:1rem;
+}
+.timer-ring { position:relative; width:44px; height:44px; flex-shrink:0; }
+.timer-ring svg { transform:rotate(-90deg); }
+.timer-ring circle { fill:none; stroke-width:4; }
+.timer-bg  { stroke:#ddd; }
+.timer-fg  { stroke:#33A8C7; stroke-linecap:round; transition:stroke-dashoffset .9s linear, stroke .5s; }
+.timer-label {
+  position:absolute; inset:0; display:flex;
+  align-items:center; justify-content:center;
+  font-family:'Press Start 2P',cursive;
+  font-size:.55rem; font-weight:700; color:#000;
+}
+.timer-status {
+  font-size:.42rem;
+  color:#555;
+  line-height: 1.8;
+}
+
+/* Clue box */
+#clueBox {
+  min-height:140px; text-align:left;
+  line-height:2; font-size:.72rem;
+  border: 3px solid #000;
+  border-radius: 4px;
+  padding:.9rem 1rem; margin-bottom:1rem;
+  background: #f9f9f9;
+  position:relative; overflow:hidden;
+  font-family: 'Press Start 2P', cursive;
+  color: #000;
+  box-shadow: inset 2px 2px 0 #ddd;
+}
+#clueBox.empty { color:#999; font-style:normal; }
+
+/* Clue sentence fade-in */
+@keyframes fade-in-up {
+  from { opacity:0; transform:translateY(8px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+.clue-sentence {
+  display:block; margin-bottom:.6rem;
+  animation:fade-in-up .4s ease;
+}
+.clue-sentence:last-child { margin-bottom:0; }
+
+/* Blanked title */
+.blank {
+  display:inline-block; background:#000;
+  border-radius:2px; min-width:60px; height:.85em;
+  vertical-align:middle; margin:0 3px;
+}
+.blank.revealed {
+  background:transparent; color:#e74c3c;
+  font-weight:700;
+}
+
+/* Guess section */
+.guess-row {
+  display:flex; gap:.5rem; margin-bottom:.7rem;
+}
+#guessInput {
+  flex:1; padding:.6rem .8rem;
+  font-size:.6rem;
+  font-family:'Press Start 2P', cursive;
+  border: 3px solid #000;
+  border-radius: 4px;
+  background: #fff;
+  color: #000;
+  outline:none;
+  transition:border-color .2s, box-shadow .2s;
+  box-shadow: 2px 2px 0 #333;
+}
+#guessInput:focus { border-color:#33A8C7; box-shadow: 2px 2px 0 #33A8C7; }
+#guessInput.correct { border-color:#A0E426; background:rgba(160,228,38,.12); box-shadow: 2px 2px 0 #A0E426; }
+#guessInput.wrong   { border-color:#F77976; animation:shake .3s; }
+@keyframes shake {
+  0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)}
+}
+
+/* Autocomplete dropdown */
+.autocomplete-wrap { position:relative; flex:1; }
+.autocomplete-list {
+  position:absolute; top:100%; left:0; right:0; z-index:50;
+  background:#fff;
+  border: 3px solid #000;
+  border-radius:4px;
+  box-shadow: 4px 4px 0 #333;
+  max-height:180px; overflow-y:auto; margin-top:2px;
+}
+.autocomplete-item {
+  padding:.5rem .8rem;
+  font-size:.48rem;
+  font-family:'Press Start 2P', cursive;
+  cursor:pointer;
+  border-bottom: 2px solid #eee;
+  transition:background .15s;
+  color: #000;
+}
+.autocomplete-item:last-child { border-bottom:none; }
+.autocomplete-item:hover, .autocomplete-item.active { background:#ffcc00; color:#000; }
+
+/* Buttons */
+.btn {
+  padding:.5rem 1rem;
+  border: 3px solid #000;
+  border-radius: 4px;
+  font-family:'Press Start 2P', cursive;
+  font-size:.48rem;
+  cursor:pointer;
+  white-space:nowrap;
+  position: relative;
+  top: 0;
+  transition: all .1s;
+  outline: none;
+}
+.btn:disabled { opacity:.35; cursor:default; box-shadow:none !important; top:0 !important; }
+
+.btn-primary {
+  background: #33A8C7;
+  color: #fff;
+  box-shadow: 0 4px 0 #1e7a92, 0 6px 0 #000;
+}
+.btn-primary:not(:disabled):hover { top:2px; box-shadow:0 2px 0 #1e7a92,0 4px 0 #000; }
+.btn-primary:not(:disabled):active { top:4px; box-shadow:0 0px 0 #1e7a92,0 2px 0 #000; }
+
+.btn-accent {
+  background: #ffcc00;
+  color: #000;
+  box-shadow: 0 4px 0 #d9b300, 0 6px 0 #000;
+}
+.btn-accent:not(:disabled):hover  { top:2px; box-shadow:0 2px 0 #d9b300,0 4px 0 #000; }
+.btn-accent:not(:disabled):active { top:4px; box-shadow:0 0px 0 #d9b300,0 2px 0 #000; }
+
+.btn-ghost {
+  background: #fff;
+  color: #000;
+  box-shadow: 0 4px 0 #aaa, 0 6px 0 #000;
+}
+.btn-ghost:not(:disabled):hover  { top:2px; box-shadow:0 2px 0 #aaa,0 4px 0 #000; }
+.btn-ghost:not(:disabled):active { top:4px; box-shadow:0 0px 0 #aaa,0 2px 0 #000; }
+
+.action-row {
+  display:flex; gap:.45rem; flex-wrap:wrap; margin-top:.4rem;
+}
+
+/* Skip / hint cost badges */
+.cost-badge {
+  font-size:.38rem;
+  background: rgba(0,0,0,.15);
+  border-radius:3px;
+  padding:.1rem .35rem;
+  margin-left:.3rem;
+  font-family:'Press Start 2P', cursive;
+}
+
+/* Feedback banner */
+#feedback {
+  min-height:1.6rem;
+  font-size:.45rem;
+  color:#555;
+  margin-top:.7rem;
+  text-align:center;
+  line-height:2;
+  transition:color .3s;
+  font-family:'Press Start 2P', cursive;
+}
+#feedback.good { color:#A0E426; text-shadow: 1px 1px 0 #000; }
+#feedback.bad  { color:#F77976; text-shadow: 1px 1px 0 #000; }
+
+/* Result reveal */
+.result-reveal {
+  text-align:center; padding:1rem 0 .5rem;
+}
+.result-reveal .article-title {
+  font-size:.85rem;
+  font-weight:700;
+  color:#33A8C7;
+  margin-bottom:.5rem;
+  text-shadow: 1px 1px 0 #000;
+}
+.result-reveal .summary-text {
+  font-size:.42rem;
+  color:#555;
+  line-height:2;
+  max-height:80px;
+  overflow:hidden;
+}
+.result-reveal a {
+  font-size:.42rem;
+  color:#33A8C7;
+  text-decoration:none;
+  display:inline-block;
+  margin-top:.5rem;
+  border-bottom: 2px solid #33A8C7;
+}
+.result-reveal a:hover { color:#ffcc00; border-color:#ffcc00; }
+
+/* Scoring legend text */
+.scoring-text {
+  font-size:.4rem;
+  color:#555;
+  line-height:3;
+  font-family:'Press Start 2P', cursive;
+}
+
+/* Footer */
+footer {
+  text-align:center;
+  font-size:.42rem;
+  color:#666;
+  padding:1.5rem 1rem .5rem;
+}
+footer a { color:#666; }
+
+@media(max-width:640px){
+  header h1 { font-size:1.1rem; }
+  .game-card { padding:.9rem; }
+  .panel { min-width:82px; }
+  .panel .val { font-size:.85rem; }
+  .action-row { gap:.35rem; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Guess The Article</h1>
+  <p>Clues reveal one by one — guess the Wikipedia article</p>
+</header>
+
+<div class="controls">
+  <div class="control-item">
+    <label>Dark mode</label>
+    <label class="switch"><input type="checkbox" id="darkToggle"/><span class="slider"></span></label>
+  </div>
+  <div class="control-item">
+    <label>Hard mode</label>
+    <label class="switch"><input type="checkbox" id="hardToggle"/><span class="slider"></span></label>
+  </div>
+  <div class="control-item">
+    <label>Timer</label>
+    <label class="switch"><input type="checkbox" id="timerToggle" checked/><span class="slider"></span></label>
+  </div>
+</div>
+
+<div class="category-group" id="categoryGroup">
+  <div class="cat-pill active" data-cat="random">🎲 Random</div>
+  <div class="cat-pill" data-cat="science">🔬 Science</div>
+  <div class="cat-pill" data-cat="history">📜 History</div>
+  <div class="cat-pill" data-cat="geography">🌍 Geography</div>
+  <div class="cat-pill" data-cat="art">🎨 Art</div>
+  <div class="cat-pill" data-cat="sport">⚽ Sport</div>
+</div>
+
+<main>
+  <!-- Left panel -->
+  <div style="display:flex;flex-direction:column;gap:.9rem;">
+    <div class="panel">
+      <h2>Score</h2>
+      <div class="val" id="scoreDisplay">0</div>
+    </div>
+    <div class="panel">
+      <h2>Best</h2>
+      <div class="val sm" id="bestDisplay">0</div>
+    </div>
+    <div class="panel">
+      <h2>Streak 🔥</h2>
+      <div class="val sm" id="streakDisplay">0</div>
+    </div>
+    <div class="panel">
+      <h2>Round</h2>
+      <div class="val sm" id="roundDisplay">—</div>
+    </div>
+  </div>
+
+  <!-- Game card -->
+  <div class="game-card">
+    <!-- Clue progress dots -->
+    <div class="clue-progress" id="clueDots"></div>
+
+    <!-- Timer -->
+    <div class="timer-wrap" id="timerWrap">
+      <div class="timer-ring">
+        <svg width="44" height="44" viewBox="0 0 44 44">
+          <circle class="timer-bg" cx="22" cy="22" r="18"/>
+          <circle class="timer-fg" id="timerArc" cx="22" cy="22" r="18"
+            stroke-dasharray="113" stroke-dashoffset="0"/>
+        </svg>
+        <div class="timer-label" id="timerLabel">—</div>
+      </div>
+      <div class="timer-status" id="timerStatus">Press Start to begin</div>
+    </div>
+
+    <!-- Clue box -->
+    <div id="clueBox" class="empty">Clues will appear here…</div>
+
+    <!-- Guess input with autocomplete -->
+    <div class="guess-row">
+      <div class="autocomplete-wrap">
+        <input id="guessInput" type="text" placeholder="Type your guess…" autocomplete="off" disabled/>
+        <div class="autocomplete-list" id="autocompleteList" style="display:none;"></div>
+      </div>
+      <button class="btn btn-primary" id="guessBtn" disabled>Guess</button>
+    </div>
+
+    <div class="action-row">
+      <button class="btn btn-ghost" id="startBtn">▶ Start</button>
+      <button class="btn btn-accent" id="nextClueBtn" disabled>➕ Clue</button>
+      <button class="btn btn-ghost" id="hintBtn" disabled>💡 Hint<span class="cost-badge">−100</span></button>
+      <button class="btn btn-ghost" id="skipBtn" disabled>⏭ Skip<span class="cost-badge">−200</span></button>
+      <button class="btn btn-ghost" id="revealBtn" disabled>👁 Reveal</button>
+    </div>
+
+    <div id="feedback"></div>
+
+    <!-- Result area -->
+    <div id="resultArea" style="display:none;"></div>
+  </div>
+
+  <!-- Right panel -->
+  <div style="display:flex;flex-direction:column;gap:.9rem;">
+    <div class="panel">
+      <h2>Clue</h2>
+      <div class="val sm" id="clueNumDisplay">—</div>
+    </div>
+    <div class="panel">
+      <h2>Points</h2>
+      <div class="val sm" id="pointsDisplay">1000</div>
+    </div>
+    <div class="panel" style="max-width:130px;">
+      <h2>Scoring</h2>
+      <div class="scoring-text">
+        Clue 1→1000<br/>
+        Clue 2→800<br/>
+        Clue 3→600<br/>
+        Later→200<br/>
+        Streak ×bonus
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Guesses</h2>
+      <div class="val sm" id="guessesDisplay">0</div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  Uses the Wikipedia API — <a href="https://sambec.github.io/games/">back to games</a>
+</footer>
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   GUESS THE ARTICLE — retro pixel edition
+═══════════════════════════════════════════════════════════ */
+
+let articleTitle = '';
+let articleTitleClean = '';
+let articleUrl   = '';
+let clues        = [];
+let clueIndex    = 0;
+let score        = 0;
+let streak       = 0;
+let roundNum     = 0;
+let guessCount   = 0;
+let bestScore    = +localStorage.getItem('wg_best') || 0;
+let clueInterval = null;
+let timerInterval= null;
+let timerSecs    = 0;
+let maxTimer     = 60;
+let roundActive  = false;
+let selectedCat  = 'random';
+let hardMode     = false;
+let wrongGuesses = new Set();
+
+const CLUE_POINTS = [1000, 800, 600, 400, 300, 200, 200, 200];
+const CLUE_DELAY  = 8;
+
+const CAT_SEEDS = {
+  science:   ['Physics','Biology','Chemistry','Mathematics','Astronomy','Genetics','Evolution'],
+  history:   ['World War II','Ancient Rome','French Revolution','Renaissance','Silk Road','Byzantine Empire'],
+  geography: ['Amazon River','Sahara Desert','Himalayas','Atlantic Ocean','Mediterranean Sea','Andes'],
+  art:       ['Leonardo da Vinci','Pablo Picasso','Renaissance art','Impressionism','Baroque','Surrealism'],
+  sport:     ['Association football','Tennis','Basketball','Olympic Games','Formula One','Athletics'],
+};
+
+const scoreEl     = document.getElementById('scoreDisplay');
+const bestEl      = document.getElementById('bestDisplay');
+const streakEl    = document.getElementById('streakDisplay');
+const roundEl     = document.getElementById('roundDisplay');
+const clueNumEl   = document.getElementById('clueNumDisplay');
+const pointsEl    = document.getElementById('pointsDisplay');
+const guessesEl   = document.getElementById('guessesDisplay');
+const clueBox     = document.getElementById('clueBox');
+const guessInput  = document.getElementById('guessInput');
+const guessBtn    = document.getElementById('guessBtn');
+const startBtn    = document.getElementById('startBtn');
+const hintBtn     = document.getElementById('hintBtn');
+const skipBtn     = document.getElementById('skipBtn');
+const revealBtn   = document.getElementById('revealBtn');
+const feedback    = document.getElementById('feedback');
+const resultArea  = document.getElementById('resultArea');
+const acList      = document.getElementById('autocompleteList');
+const timerArc    = document.getElementById('timerArc');
+const timerLabel  = document.getElementById('timerLabel');
+const timerStatus = document.getElementById('timerStatus');
+const clueDots    = document.getElementById('clueDots');
+const nextClueBtn = document.getElementById('nextClueBtn');
+bestEl.textContent = bestScore;
+
+// ── Category pills ──────────────────────────────────────────
+document.querySelectorAll('.cat-pill').forEach(pill => {
+  pill.addEventListener('click', () => {
+    document.querySelectorAll('.cat-pill').forEach(p=>p.classList.remove('active'));
+    pill.classList.add('active');
+    selectedCat = pill.dataset.cat;
+  });
+});
+
+// ── Fetch article ───────────────────────────────────────────
+async function fetchArticle() {
+  setFeedback('Fetching article…', '');
+  try {
+    let data;
+    if (selectedCat === 'random') {
+      const res = await fetch('https://en.wikipedia.org/api/rest_v1/page/random/summary');
+      data = await res.json();
+    } else {
+      const seeds = CAT_SEEDS[selectedCat];
+      const seed  = seeds[Math.floor(Math.random()*seeds.length)];
+      const linksRes = await fetch(
+        `https://en.wikipedia.org/w/api.php?action=query&prop=links&titles=${encodeURIComponent(seed)}&pllimit=50&plnamespace=0&format=json&origin=*`
+      );
+      const linksData = await linksRes.json();
+      const pages = Object.values(linksData.query.pages);
+      const links = pages[0].links || [];
+      if (!links.length) {
+        const res = await fetch('https://en.wikipedia.org/api/rest_v1/page/random/summary');
+        data = await res.json();
+      } else {
+        const pick = links[Math.floor(Math.random()*links.length)].title;
+        const res  = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(pick)}`);
+        data = await res.json();
+        if (!data.extract || data.extract.length < 100) {
+          const r2 = await fetch('https://en.wikipedia.org/api/rest_v1/page/random/summary');
+          data = await r2.json();
+        }
+      }
+    }
+    return data;
+  } catch(e) {
+    setFeedback('Network error — retrying…', 'bad');
+    await delay(1500);
+    const res = await fetch('https://en.wikipedia.org/api/rest_v1/page/random/summary');
+    return await res.json();
+  }
+}
+
+// ── Start round ─────────────────────────────────────────────
+async function startRound() {
+  clearTimers();
+  roundActive    = false;
+  guessCount     = 0;
+  wrongGuesses   = new Set();
+  clueIndex      = 0;
+  hardMode       = document.getElementById('hardToggle').checked;
+
+  startBtn.textContent = '⏳…';
+  startBtn.disabled    = true;
+  [guessBtn, hintBtn, skipBtn, revealBtn, nextClueBtn].forEach(b=>b.disabled=false);
+  guessInput.disabled  = true;
+  guessInput.value     = '';
+  guessInput.className = '';
+  clueBox.innerHTML    = '';
+  clueBox.className    = 'empty';
+  resultArea.style.display = 'none';
+  setFeedback('', '');
+
+  const data = await fetchArticle();
+
+  articleTitle      = data.title;
+  articleTitleClean = data.title.toLowerCase().trim();
+  articleUrl        = data.content_urls?.desktop?.page || `https://en.wikipedia.org/wiki/${encodeURIComponent(data.title)}`;
+
+  const raw = data.extract || '';
+  const titleWords = articleTitle.split(/\s+/);
+  let masked = raw;
+  masked = masked.replace(new RegExp(escapeRe(articleTitle), 'gi'), '■■■■■');
+  titleWords.forEach(w => {
+    if (w.length > (hardMode ? 1 : 3))
+      masked = masked.replace(new RegExp('\\b'+escapeRe(w)+'\\b', 'gi'), '■■■');
+  });
+
+  clues = masked
+    .replace(/\n+/g,' ')
+    .split(/(?<=[.!?])\s+/)
+    .map(s=>s.trim())
+    .filter(s=>s.length>20);
+
+  if (clues.length < 2) {
+    startBtn.textContent = '▶ Start';
+    startBtn.disabled    = false;
+    return startRound();
+  }
+
+  roundNum++;
+  roundActive = true;
+  clueBox.className = '';
+
+  clueDots.innerHTML = '';
+  const dotCount = Math.min(clues.length, 10);
+  for (let i=0;i<dotCount;i++) {
+    const d=document.createElement('div');
+    d.className='clue-dot';
+    d.id=`dot-${i}`;
+    clueDots.appendChild(d);
+  }
+
+  updateUI();
+  startBtn.textContent = '↺ New';
+  startBtn.disabled    = false;
+  [guessBtn, hintBtn, skipBtn, revealBtn].forEach(b=>b.disabled=false);
+  guessInput.disabled  = false;
+  guessInput.focus();
+
+  revealNextClue();
+
+  if (document.getElementById('timerToggle').checked) {
+    maxTimer  = Math.max(30, clues.length * CLUE_DELAY);
+    timerSecs = maxTimer;
+    startTimer();
+  } else {
+    timerLabel.textContent = '∞';
+    timerArc.style.strokeDashoffset = '0';
+    timerStatus.textContent = 'No timer';
+  }
+}
+
+// ── Clue reveal ─────────────────────────────────────────────
+function revealNextClue() {
+  if (!roundActive || clueIndex >= clues.length) return;
+
+  const sentence = clues[clueIndex];
+  const span = document.createElement('span');
+  span.className = 'clue-sentence';
+  span.innerHTML = formatClue(sentence);
+  clueBox.appendChild(span);
+  clueBox.scrollTop = clueBox.scrollHeight;
+
+  if (clueIndex > 0) {
+    const prev = document.getElementById(`dot-${clueIndex-1}`);
+    if (prev) { prev.classList.remove('current'); prev.classList.add('revealed'); }
+  }
+  const cur = document.getElementById(`dot-${clueIndex}`);
+  if (cur) cur.classList.add('current');
+
+  clueIndex++;
+  updateUI();
+}
+
+function formatClue(text) {
+  return text.replace(/■■■■■/g, '<span class="blank"></span>')
+             .replace(/■■■/g,   '<span class="blank" style="min-width:40px"></span>');
+}
+
+// ── Timer ───────────────────────────────────────────────────
+function startTimer() {
+  const circ = 2 * Math.PI * 18;
+  timerInterval = setInterval(() => {
+    timerSecs--;
+    if (timerSecs < 0) {
+      clearTimers();
+      endRound(false, 'time up');
+      return;
+    }
+    const pct  = timerSecs / maxTimer;
+    const offs = circ * (1 - pct);
+    timerArc.style.strokeDashoffset = offs;
+    timerArc.style.stroke = timerSecs > maxTimer*.4
+      ? '#33A8C7' : timerSecs > maxTimer*.15 ? '#FFAB00' : '#F77976';
+    timerLabel.textContent = timerSecs;
+    timerStatus.textContent = timerSecs > 10 ? 'Time remaining' : '⚠ Hurry!';
+  }, 1000);
+  timerLabel.textContent = timerSecs;
+  timerArc.style.strokeDashoffset = '0';
+}
+
+// ── Guess ───────────────────────────────────────────────────
+function submitGuess() {
+  if (!roundActive) return;
+  const g = guessInput.value.trim();
+  if (!g) return;
+
+  guessCount++;
+  guessesEl.textContent = guessCount;
+  hideAutocomplete();
+
+  const gNorm = normalize(g);
+  const aNorm = normalize(articleTitleClean);
+  const correct = gNorm === aNorm || aNorm.includes(gNorm) && gNorm.length > 4;
+
+  if (correct) {
+    endRound(true);
+  } else {
+    wrongGuesses.add(g.toLowerCase());
+    guessInput.className = 'wrong';
+    setTimeout(()=>{ if(guessInput.className==='wrong') guessInput.className=''; }, 500);
+    setFeedback(getWrongFeedback(gNorm, aNorm), 'bad');
+    guessInput.select();
+  }
+}
+
+function normalize(s) {
+  return s.toLowerCase()
+    .replace(/['']/g,"'")
+    .replace(/[^a-z0-9 ']/g,'')
+    .replace(/\s+/g,' ').trim();
+}
+
+function getWrongFeedback(guess, answer) {
+  const gw = guess.split(' ').length;
+  const aw = answer.split(' ').length;
+  const msgs = ['Not quite…','Keep trying!','Think broader…','Look at the clues again…','Hmm, not that one…'];
+  let msg = msgs[Math.floor(Math.random()*msgs.length)];
+  if (aw > 1 && gw === 1) msg += ' (multiple words)';
+  return msg;
+}
+
+// ── Hint ────────────────────────────────────────────────────
+function useHint() {
+  if (!roundActive) return;
+  const words = articleTitle.split(' ');
+  const hint  = words.map(w => w[0] + '_'.repeat(w.length-1)).join(' ');
+  setFeedback(`Hint: "${hint}" (−100 pts)`, 'bad');
+  score = Math.max(0, score - 100);
+  updateUI();
+}
+
+// ── Skip ────────────────────────────────────────────────────
+function skipRound() {
+  if (!roundActive) return;
+  score = Math.max(0, score - 200);
+  streak = 0;
+  updateUI();
+  endRound(false, 'skipped');
+}
+
+// ── Reveal ──────────────────────────────────────────────────
+function revealAnswer() {
+  if (!roundActive) return;
+  streak = 0;
+  endRound(false, 'revealed');
+}
+
+// ── End round ───────────────────────────────────────────────
+function endRound(win, reason='') {
+  if (!roundActive) return;
+  roundActive = false;
+  clearTimers();
+
+  [guessBtn, hintBtn, skipBtn, revealBtn, nextClueBtn].forEach(b=>b.disabled=true);
+  guessInput.disabled = true;
+
+  if (win) {
+    const pts  = CLUE_POINTS[Math.min(clueIndex-1, CLUE_POINTS.length-1)];
+    const mult = 1 + streak * 0.1;
+    const earned = Math.round(pts * mult);
+    score += earned;
+    streak++;
+    guessInput.className = 'correct';
+    setFeedback(`✓ Correct! +${earned} pts${streak>1?' (×'+mult.toFixed(1)+' streak)':''}`, 'good');
+    showDelta('+'+earned);
+    playWin();
+
+    clueBox.querySelectorAll('.blank').forEach(b => {
+      b.classList.add('revealed');
+      b.textContent = articleTitle;
+      b.style.minWidth='auto';
+    });
+  } else {
+    streak = 0;
+    const msg = reason==='skipped' ? '⏭ Skipped' : reason==='time up' ? '⏰ Time\'s up!' : '❌ No more clues!';
+    setFeedback(`${msg} — it was: ${articleTitle}`, 'bad');
+    playFail();
+  }
+
+  if (score > bestScore) { bestScore = score; localStorage.setItem('wg_best', bestScore); }
+  updateUI();
+  showResult(win);
+}
+
+function showResult(win) {
+  resultArea.style.display = 'block';
+  resultArea.innerHTML = `
+    <div class="result-reveal">
+      <div class="article-title">${win?'✓ ':''} ${articleTitle}</div>
+      <div class="summary-text">${clues[0]?.replace(/■■■■■|■■■/g,'…') || ''}</div>
+      <a href="${articleUrl}" target="_blank" rel="noopener">Read on Wikipedia →</a>
+    </div>`;
+}
+
+// ── Score delta popup ────────────────────────────────────────
+function showDelta(text) {
+  const el = document.createElement('span');
+  el.className = 'delta'; el.textContent = text;
+  scoreEl.appendChild(el);
+  el.addEventListener('animationend', ()=>el.remove());
+}
+
+// ── Autocomplete ─────────────────────────────────────────────
+let acTimer = null;
+guessInput.addEventListener('input', () => {
+  const q = guessInput.value.trim();
+  clearTimeout(acTimer);
+  if (q.length < 2) { hideAutocomplete(); return; }
+  acTimer = setTimeout(() => fetchAutocomplete(q), 350);
+});
+
+async function fetchAutocomplete(q) {
+  try {
+    const res  = await fetch(`https://en.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(q)}&limit=5&format=json&origin=*`);
+    const data = await res.json();
+    showAutocomplete(data[1] || []);
+  } catch(e) { hideAutocomplete(); }
+}
+
+function showAutocomplete(items) {
+  if (!items.length || !roundActive) { hideAutocomplete(); return; }
+  acList.innerHTML = '';
+  items.forEach((item) => {
+    const div=document.createElement('div');
+    div.className='autocomplete-item';
+    div.textContent=item;
+    div.addEventListener('mousedown', e=>{ e.preventDefault(); guessInput.value=item; hideAutocomplete(); submitGuess(); });
+    acList.appendChild(div);
+  });
+  acList.style.display='block';
+}
+
+function hideAutocomplete() { acList.style.display='none'; }
+document.addEventListener('click', e=>{ if(!e.target.closest('.autocomplete-wrap')) hideAutocomplete(); });
+
+guessInput.addEventListener('keydown', e => {
+  const items = acList.querySelectorAll('.autocomplete-item');
+  let active  = acList.querySelector('.active');
+  if (e.key==='ArrowDown') {
+    e.preventDefault();
+    if (!active) items[0]?.classList.add('active');
+    else { active.classList.remove('active'); (active.nextElementSibling||items[0]).classList.add('active'); }
+  } else if (e.key==='ArrowUp') {
+    e.preventDefault();
+    if (!active) items[items.length-1]?.classList.add('active');
+    else { active.classList.remove('active'); (active.previousElementSibling||items[items.length-1]).classList.add('active'); }
+  } else if (e.key==='Enter') {
+    if (active) { guessInput.value=active.textContent; hideAutocomplete(); submitGuess(); }
+    else submitGuess();
+  } else if (e.key==='Escape') hideAutocomplete();
+});
+
+nextClueBtn.addEventListener('click', () => {
+  if (!roundActive) return;
+  if (clueIndex < clues.length) {
+    revealNextClue();
+    setFeedback("New clue revealed", "");
+  } else {
+    setFeedback("No more clues!", "bad");
+    endRound(false, 'out of clues');
+  }
+});
+
+// ── UI helpers ───────────────────────────────────────────────
+function updateUI() {
+  scoreEl.childNodes[0] && (scoreEl.childNodes[0].nodeValue = score);
+  if (!scoreEl.querySelector('.delta')) scoreEl.textContent = score;
+  bestEl.textContent    = bestScore;
+  streakEl.textContent  = streak + (streak>=3?' 🔥':'');
+  roundEl.textContent   = roundNum || '—';
+  clueNumEl.textContent = clueIndex ? `${clueIndex} / ${clues.length}` : '—';
+  const pts = CLUE_POINTS[Math.min(Math.max(clueIndex-1,0), CLUE_POINTS.length-1)];
+  pointsEl.textContent  = roundActive ? pts : '—';
+  guessesEl.textContent = guessCount;
+}
+
+function setFeedback(msg, type='') {
+  feedback.textContent  = msg;
+  feedback.className    = type;
+}
+
+function clearTimers() {
+  clearInterval(clueInterval);
+  clearInterval(timerInterval);
+}
+
+function delay(ms) { return new Promise(r=>setTimeout(r,ms)); }
+function escapeRe(s) { return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
+
+// ── Sound ────────────────────────────────────────────────────
+let audioCtx;
+function getAC(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();return audioCtx;}
+function playWin(){
+  try{
+    const a=getAC();
+    [523,659,784,1047].forEach((f,i)=>{
+      const o=a.createOscillator(),g=a.createGain();
+      o.connect(g);g.connect(a.destination);
+      o.type='sine';o.frequency.value=f;
+      g.gain.setValueAtTime(.12,a.currentTime+i*.1);
+      g.gain.exponentialRampToValueAtTime(.001,a.currentTime+i*.1+.25);
+      o.start(a.currentTime+i*.1);o.stop(a.currentTime+i*.1+.25);
+    });
+  }catch(e){}
+}
+function playFail(){
+  try{
+    const a=getAC(),o=a.createOscillator(),g=a.createGain();
+    o.connect(g);g.connect(a.destination);
+    o.type='sawtooth';o.frequency.setValueAtTime(300,a.currentTime);
+    o.frequency.linearRampToValueAtTime(100,a.currentTime+.4);
+    g.gain.setValueAtTime(.12,a.currentTime);
+    g.gain.exponentialRampToValueAtTime(.001,a.currentTime+.4);
+    o.start();o.stop(a.currentTime+.4);
+  }catch(e){}
+}
+
+// ── Event bindings ───────────────────────────────────────────
+startBtn.addEventListener('click', startRound);
+guessBtn.addEventListener('click', submitGuess);
+hintBtn.addEventListener('click',  useHint);
+skipBtn.addEventListener('click',  skipRound);
+revealBtn.addEventListener('click',revealAnswer);
+document.getElementById('darkToggle').addEventListener('change', () => {
+  // dark is always on in this retro theme — no-op
+});
+
+// ── Init ─────────────────────────────────────────────────────
+updateUI();
+</script>
+</body>
+</html>
