@@ -1,217 +1,1246 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>La Bataille</title>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Battleship</title>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-    <style type="text/css">* {cursor: url(https://ani.cursors-4u.net/cursors/cur-13/cur1151.ani), url(https://ani.cursors-4u.net/cursors/cur-13/cur1151.png), auto !important;}</style><a href="https://www.cursors-4u.com/cursor/2018/03/07/pink-electricity-lightning.html" target="_blank" title="Pink Electricity Lightning"><img src="https://cur.cursors-4u.net/cursor.png" border="0" alt="Pink Electricity Lightning" style="position:absolute; top: 0px; right: 0px;" /></a>
-
+    <style type="text/css">* {cursor: url(https://ani.cursors-4u.net/cursors/cur-13/cur1151.ani), url(https://ani.cursors-4u.net/cursors/cur-13/cur1151.png), auto !important;}</style><a href="https://www.cursors-4u.com/cursor/2018/03/07/pink-electricity-lightning.html" target="_blank" title="Pink Electricity Lightning"><img src="https://cur.cursors-4u.net/cursor.png" border="0" alt="Pink Electricity Lightning" style="position:absolute; top: 0; right: 0;" /></a>
     <style>
+        :root {
+            --bg: #090314;
+            --surface: #1a1030;
+            --surface2: #23154a;
+            --border: #00e5ff;
+            --text: #fff3fd;
+            --muted: #c5a8d9;
+            --accent: #ff4fd8;
+            --accent-2: #00e5ff;
+            --accent-3: #ffb347;
+            --danger: #ff375f;
+            --shadow: rgba(255, 79, 216, 0.28);
+            --p1-sea: #301e68;
+            --p1-sea2: #4f2fa0;
+            --p2-sea: #51255f;
+            --p2-sea2: #7f2d7a;
+            --ship: #ffe27a;
+            --ship-edge: #fff1b8;
+            --miss: #def8ff;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
         body {
+            min-height: 100vh;
             font-family: 'Press Start 2P', cursive;
+            background:
+                repeating-linear-gradient(
+                    0deg,
+                    rgba(255, 255, 255, 0.035) 0,
+                    rgba(255, 255, 255, 0.035) 1px,
+                    transparent 1px,
+                    transparent 4px
+                ),
+                radial-gradient(circle at 78% 10%, rgba(255, 79, 216, 0.25), transparent 40%),
+                radial-gradient(circle at 18% 88%, rgba(0, 229, 255, 0.18), transparent 45%),
+                linear-gradient(180deg, #2a0f49 0%, #130722 52%, #090314 100%),
+                var(--bg);
+            color: var(--text);
             display: flex;
             flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
-            background-color: #000;
-            color: #fff;
+        }
+
+        .crt-frame {
+            position: relative;
+            width: min(1240px, calc(100% - 1rem));
+            margin: .6rem auto 0;
+            border-radius: 26px;
+            border: 2px solid rgba(126, 244, 255, 0.35);
+            background: linear-gradient(180deg, rgba(0, 229, 255, 0.05), rgba(255, 79, 216, 0.02) 24%, rgba(8, 4, 20, 0.88));
+            box-shadow:
+                0 0 0 1px rgba(255, 79, 216, 0.22),
+                0 16px 28px rgba(0, 0, 0, 0.32),
+                inset 0 0 18px rgba(0, 229, 255, 0.06);
+            overflow: hidden;
+            z-index: 2;
+        }
+
+        .crt-frame::before {
+            content: none;
+        }
+
+        .crt-frame::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            box-shadow: inset 0 0 32px rgba(0, 0, 0, 0.32);
+            border-radius: 26px;
+        }
+
+        header {
+            text-align: center;
+            padding: 1.2rem .8rem .7rem;
+            border-bottom: 2px solid var(--border);
+            box-shadow: 0 0 24px var(--shadow);
+            background: linear-gradient(180deg, rgba(255, 79, 216, 0.14), rgba(0, 0, 0, 0));
         }
 
         h1 {
-            color: #ff69b4;
-            text-shadow: 2px 2px #00f;
-            animation: blink 1.5s infinite;
+            color: var(--accent);
+            text-shadow: 2px 2px var(--accent-2);
+            font-size: clamp(1.1rem, 2.6vw, 1.8rem);
+            line-height: 1.35;
+            animation: neonPulse 1.7s ease-in-out infinite alternate;
         }
 
-        @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0; }
+        @keyframes neonPulse {
+            from {
+                text-shadow: 0 0 3px rgba(255, 79, 216, 0.8), 2px 2px var(--accent-2);
+            }
+            to {
+                text-shadow: 0 0 14px rgba(255, 79, 216, 0.95), 0 0 26px rgba(0, 229, 255, 0.6), 2px 2px var(--accent-2);
+            }
         }
 
-        .cards {
-            display: flex;
-            gap: 20px;
+        header p {
+            color: var(--muted);
+            font-size: .58rem;
+            line-height: 1.7;
+            margin-top: .7rem;
         }
 
-        .card {
-            width: 100px;
-            height: 150px;
-            border: 2px solid #ff69b4;
-            background-color: #fff;
-            color: #000;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 1.5em;
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: .45rem;
+            padding: .7rem;
+            max-width: 980px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        button {
+            font-family: 'Press Start 2P', cursive;
+            border: 2px solid var(--border);
+            background: linear-gradient(180deg, #33135a, #220d3f);
+            color: var(--text);
+            padding: .62rem .5rem;
+            font-size: .56rem;
+            line-height: 1.45;
             cursor: pointer;
-            transition: transform 0.3s;
+            transition: transform .1s, box-shadow .2s, filter .2s;
+            text-shadow: 0 0 6px rgba(255, 79, 216, 0.6);
         }
 
-        .card:hover {
-            transform: scale(1.1);
+        button:hover { box-shadow: 0 0 18px rgba(0, 229, 255, 0.6), inset 0 0 12px rgba(255, 79, 216, 0.25); }
+        button:active { transform: translateY(1px); }
+        button:disabled { opacity: .45; cursor: not-allowed; box-shadow: none; }
+        .tab-btn.active {
+            background: linear-gradient(180deg, #00d8ff, #00a6d8);
+            color: #021623;
+            border-color: #7ef4ff;
+            text-shadow: none;
         }
 
-        .score {
-            margin-top: 20px;
-            font-size: 1.2em;
+        main {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: .45rem .7rem 1rem;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: .7rem;
+            align-items: start;
+            position: relative;
+            z-index: 2;
         }
-        h1 {
-        color: #ff69b4;
-        text-shadow: 2px 2px #00f;
-        animation: blink 1.5s infinite;
-    }
 
-    @keyframes blink {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0; }
-    }
+        .panel {
+            border: 2px solid var(--border);
+            background:
+                linear-gradient(180deg, rgba(255, 79, 216, 0.1), rgba(0, 0, 0, 0) 26%),
+                linear-gradient(180deg, var(--surface2), var(--surface));
+            box-shadow: 0 0 20px var(--shadow);
+            padding: .8rem;
+        }
 
-    .cards {
-        display: flex;
-        gap: 20px;
-    }
+        .hidden-minimal {
+            display: none !important;
+        }
 
-    .card {
-        width: 100px;
-        height: 150px;
-        border: 2px solid #ff69b4;
-        background-color: #222;
-        color: #fff;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        text-align: center;
-        font-size: 1em;
-        cursor: pointer;
-        transition: transform 0.3s;
-        padding: 10px;
-    }
+        .panel h2 {
+            font-size: .56rem;
+            color: var(--accent);
+            margin-bottom: .6rem;
+            line-height: 1.5;
+        }
 
-    .card:hover {
-        transform: scale(1.1);
-    }
+        .value {
+            font-size: .66rem;
+            line-height: 1.7;
+        }
 
-    .score {
-        margin-top: 20px;
-        font-size: 1.2em;
-    }
+        .action-value {
+            font-size: .58rem;
+            line-height: 1.9;
+            min-height: 2.2em;
+        }
 
-    button {
-        margin-top: 10px;
-        padding: 10px 20px;
-        font-size: 1em;
-        cursor: pointer;
-        background-color: #ff69b4;
-        border: none;
-        color: white;
-        font-family: 'Press Start 2P', cursive;
-    }
+        .action-value.hit {
+            color: #7dff9f;
+        }
 
-    button:hover {
-        background-color: #ff1493;
-    }
+        .action-value.miss {
+            color: #8fd9ff;
+        }
+
+        .action-value.warn {
+            color: #ffd27d;
+        }
+
+        .copy {
+            margin-top: .5rem;
+            color: var(--muted);
+            font-size: .52rem;
+            line-height: 1.8;
+        }
+
+        .hud-grid,
+        .fleet-list,
+        .score-list {
+            display: grid;
+            gap: .5rem;
+        }
+
+        .mini-card,
+        .score-item,
+        .fleet-item {
+            border: 1px solid rgba(76, 201, 240, .45);
+            background: rgba(7, 6, 25, .5);
+            padding: .55rem;
+            font-size: .52rem;
+            line-height: 1.5;
+        }
+
+        .mini-card strong {
+            color: var(--muted);
+            display: block;
+            margin-bottom: .35rem;
+            font-size: .5rem;
+        }
+
+        .fleet-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: .5rem;
+        }
+
+        .fleet-item.active {
+            color: var(--accent);
+            box-shadow: inset 0 0 0 1px var(--accent);
+        }
+
+        .fleet-item.done {
+            opacity: .55;
+        }
+
+        .ship-chip,
+        .next-ship-preview {
+            display: inline-flex;
+            gap: 3px;
+            align-items: center;
+        }
+
+        .ship-chip i,
+        .next-ship-preview i {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            background: var(--ship);
+            border: 1px solid var(--ship-edge);
+        }
+
+        .next-ship-preview.vertical {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .game-wrap {
+            position: relative;
+            overflow: hidden;
+            border: 2px solid var(--border);
+            background: linear-gradient(180deg, #1a1140, #12072a);
+            box-shadow: 0 0 20px rgba(76, 201, 240, .26);
+            padding: .7rem;
+        }
+
+        .game-wrap::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 38%;
+            background:
+                repeating-linear-gradient(
+                    90deg,
+                    rgba(0, 229, 255, 0.35) 0,
+                    rgba(0, 229, 255, 0.35) 1px,
+                    transparent 1px,
+                    transparent 26px
+                ),
+                repeating-linear-gradient(
+                    0deg,
+                    rgba(255, 79, 216, 0.22) 0,
+                    rgba(255, 79, 216, 0.22) 1px,
+                    transparent 1px,
+                    transparent 16px
+                );
+            transform: perspective(220px) rotateX(62deg);
+            transform-origin: bottom;
+            opacity: .28;
+            pointer-events: none;
+        }
+
+        .board-tabs {
+            display: none;
+            gap: .45rem;
+            margin-bottom: .55rem;
+        }
+
+        .boards {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: .6rem;
+        }
+
+        .board-panel {
+            border: 1px solid rgba(126, 244, 255, .42);
+            background: rgba(18, 10, 44, .68);
+            padding: .55rem;
+        }
+
+        .board-panel h3 {
+            font-size: .56rem;
+            margin-bottom: .45rem;
+            line-height: 1.5;
+            color: var(--accent);
+        }
+
+        .board-panel p {
+            font-size: .5rem;
+            color: var(--muted);
+            line-height: 1.7;
+            margin-bottom: .55rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(8, minmax(0, 1fr));
+            gap: 3px;
+            max-width: 430px;
+            margin: 0 auto;
+        }
+
+        .cell {
+            aspect-ratio: 1 / 1;
+            border: 1px solid rgba(176, 245, 255, .26);
+            background: linear-gradient(180deg, var(--cell-sea), var(--cell-sea2));
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cell.interactive:hover {
+            filter: brightness(1.14);
+        }
+
+        .cell.ship::after,
+        .cell.preview::after,
+        .cell.sunk-ship::after {
+            content: "";
+            position: absolute;
+            inset: 16%;
+            background: var(--ship);
+            border: 1px solid var(--ship-edge);
+        }
+
+        .cell.ship.start-h::after,
+        .cell.preview.start-h::after,
+        .cell.sunk-ship.start-h::after { border-radius: 8px 3px 3px 8px; }
+        .cell.ship.mid-h::after,
+        .cell.preview.mid-h::after,
+        .cell.sunk-ship.mid-h::after { border-radius: 3px; }
+        .cell.ship.end-h::after,
+        .cell.preview.end-h::after,
+        .cell.sunk-ship.end-h::after { border-radius: 3px 8px 8px 3px; }
+        .cell.ship.start-v::after,
+        .cell.preview.start-v::after,
+        .cell.sunk-ship.start-v::after { border-radius: 8px 8px 3px 3px; }
+        .cell.ship.mid-v::after,
+        .cell.preview.mid-v::after,
+        .cell.sunk-ship.mid-v::after { border-radius: 3px; }
+        .cell.ship.end-v::after,
+        .cell.preview.end-v::after,
+        .cell.sunk-ship.end-v::after { border-radius: 3px 3px 8px 8px; }
+        .cell.ship.single::after,
+        .cell.preview.single::after,
+        .cell.sunk-ship.single::after { border-radius: 8px; }
+
+        .cell.preview { background: linear-gradient(180deg, #ffd36e, #ff9f3b); }
+
+        .cell.hit {
+            background: linear-gradient(180deg, #ff8da1, #ff375f);
+        }
+
+        .cell.sunk-ship {
+            background: linear-gradient(180deg, #ffe77f, #ffb643);
+        }
+
+        .cell.sunk-ship::after {
+            border-color: #8a5c12;
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .25);
+        }
+
+        .cell.hit::after {
+            content: "X";
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: .72rem;
+            color: #fff;
+            font-weight: 700;
+            background: none;
+            border: none;
+        }
+
+        .cell.miss {
+            background: linear-gradient(180deg, #ffffff, var(--miss));
+        }
+
+        .cell.miss::after {
+            content: "•";
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #003154;
+            font-size: .9rem;
+            background: none;
+            border: none;
+        }
+
+        .cell.blocked { opacity: .58; }
+
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(circle at center, rgba(255, 79, 216, 0.16), rgba(0, 0, 0, 0) 45%),
+                rgba(6, 3, 20, .92);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: .8rem;
+            z-index: 100;
+        }
+
+        .overlay.hidden { display: none; }
+
+        .overlay-card {
+            position: relative;
+            border: 2px solid var(--border);
+            background: linear-gradient(180deg, #2b1553, #160b2f);
+            width: min(640px, 100%);
+            padding: .9rem;
+            box-shadow: 0 0 24px var(--shadow);
+            text-align: center;
+            overflow: hidden;
+        }
+
+        .overlay-card::before {
+            content: none;
+        }
+
+        .overlay-card::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            border: 1px solid rgba(255, 79, 216, 0.45);
+            transform: translateX(1px);
+            mix-blend-mode: screen;
+            opacity: .28;
+        }
+
+        .overlay-card.win {
+            background: linear-gradient(180deg, #442400, #1d1538);
+            border-color: var(--accent-3);
+            box-shadow: 0 0 30px rgba(255, 179, 71, .45);
+        }
+
+        .overlay-card h2 {
+            position: relative;
+            font-size: .8rem;
+            color: var(--accent);
+            margin-bottom: .8rem;
+            line-height: 1.6;
+            text-shadow:
+                -1px 0 rgba(0, 229, 255, 0.82),
+                1px 0 rgba(255, 79, 216, 0.82),
+                0 0 12px rgba(255, 79, 216, 0.45);
+        }
+
+        .overlay-card p {
+            position: relative;
+            font-size: .54rem;
+            color: var(--muted);
+            line-height: 1.8;
+            margin-bottom: .8rem;
+            text-shadow:
+                -1px 0 rgba(0, 229, 255, 0.35),
+                1px 0 rgba(255, 79, 216, 0.35);
+        }
+
+        .overlay-card button {
+            position: relative;
+            text-shadow:
+                -1px 0 rgba(0, 229, 255, 0.45),
+                1px 0 rgba(255, 79, 216, 0.45);
+        }
+
+        .score-item {
+            display: flex;
+            justify-content: space-between;
+            gap: .5rem;
+        }
+
+        footer {
+            margin-top: auto;
+            text-align: center;
+            color: var(--muted);
+            font-size: .46rem;
+            line-height: 1.6;
+            padding: .9rem;
+            border-top: 2px solid var(--border);
+        }
+
+        @media (min-width: 980px) {
+            main {
+                grid-template-columns: 290px minmax(0, 1fr) 290px;
+            }
+
+            .controls {
+                grid-template-columns: repeat(5, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 860px) {
+            .hud-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 740px) {
+            .board-tabs {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .board-panel.mobile-hidden {
+                display: none;
+            }
+        }
     </style>
 </head>
 <body>
-    <h1>La Bataille</h1>
-    <div class="cards">
-        <div class="card" id="player-card">Click to play</div>
-        <div class="card" id="pc-card">PC Card</div>
+    <header>
+        <h1>Battleship: Pass-The-Phone Edition</h1>
+        <p>2 players, 1 phone, hidden fleets, and turn-by-turn handoffs on the same screen.</p>
+    </header>
+
+    <div class="controls">
+        <button id="modeBtn" type="button">Mode: Classic 8x8</button>
+        <button id="rotateBtn" type="button">Rotate: Horizontal</button>
+        <button id="focusOwnBtn" class="tab-btn active" type="button">My Grid</button>
+        <button id="focusTargetBtn" class="tab-btn" type="button">Enemy Grid</button>
+        <button id="restartBtn" type="button">New Game</button>
     </div>
-    <div class="score">
-        <p>Score Player: <span id="player-score">0</span></p>
-        <p>Score PC: <span id="pc-score">0</span></p>
+
+    <div class="crt-frame">
+    <main>
+        <div class="column">
+            <section class="panel">
+                <h2>Captain On Deck</h2>
+                <div id="statusTitle" class="value">Player 1 placement</div>
+                <div id="statusCopy" class="copy">Place your whole fleet, then pass the phone.</div>
+            </section>
+
+            <section id="battleStatusPanel" class="panel">
+                <h2>Battle Status</h2>
+                <div class="hud-grid">
+                    <div class="mini-card"><strong>Phase</strong><span id="phaseLabel">Placement</span></div>
+                    <div class="mini-card"><strong>Turn</strong><span id="turnLabel">Player 1</span></div>
+                    <div class="mini-card"><strong>Orientation</strong><span id="orientationLabel">Horizontal</span></div>
+                </div>
+            </section>
+
+            <section class="panel">
+                <h2>Last Action</h2>
+                <div id="actionFeed" class="action-value">Tap Start, then place your first ship.</div>
+            </section>
+
+            <section class="panel">
+                <h2>Fleet</h2>
+                <div id="nextShipPreview" class="copy"></div>
+                <div id="fleetList" class="fleet-list"></div>
+            </section>
+        </div>
+
+        <section class="game-wrap">
+            <div class="board-tabs">
+                <button id="mobileOwnTab" class="tab-btn" type="button">My Grid</button>
+                <button id="mobileTargetTab" class="tab-btn" type="button">Enemy Grid</button>
+            </div>
+
+            <div class="boards">
+                <article id="ownBoardPanel" class="board-panel">
+                    <h3 id="ownBoardTitle">Player 1 Grid</h3>
+                    <p id="ownBoardCopy">Your ships stay visible here.</p>
+                    <div id="ownBoard" class="grid" aria-label="Own grid"></div>
+                </article>
+
+                <article id="targetBoardPanel" class="board-panel">
+                    <h3 id="targetBoardTitle">Enemy Grid</h3>
+                    <p id="targetBoardCopy">Enemy ships stay hidden until they are hit.</p>
+                    <div id="targetBoard" class="grid" aria-label="Enemy grid"></div>
+                </article>
+            </div>
+        </section>
+
+        <div id="rightInfoColumn" class="column">
+            <section class="panel">
+                <h2>Ships Left</h2>
+                <div class="score-list">
+                    <div class="score-item"><span>Player 1</span><strong id="p1ShipsLeft">0 ships</strong></div>
+                    <div class="score-item"><span>Player 2</span><strong id="p2ShipsLeft">0 ships</strong></div>
+                </div>
+            </section>
+
+            <section class="panel">
+                <h2>Mobile Tip</h2>
+                <div class="copy">Use My Grid and Enemy Grid tabs to play comfortably on one phone.</div>
+            </section>
+        </div>
+    </main>
     </div>
-    <button id="restart-game">New Game</button>
-    <script src="battle.js">
-    </script>
+
+    <div id="overlay" class="overlay">
+        <div class="overlay-card">
+            <h2 id="overlayTitle">Battleship</h2>
+            <p id="overlayCopy">Player 1 starts by placing every ship.</p>
+            <button id="overlayBtn" type="button">Start</button>
+        </div>
+    </div>
+
+    <footer>Built for same-screen play: hide, pass, continue.</footer>
+
     <script>
-        const couleurs = ['CARREAU', 'COEUR', 'TREFLE', 'PIQUE'];
-        const noms = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'Valet', 'Dame', 'Roi', 'As'];
-        const valeurs = {
-            '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9, '10': 10,
-            'Valet': 11, 'Dame': 12, 'Roi': 13, 'As': 14
+        const GAME_MODES = {
+            classic: {
+                label: "Classic 8x8",
+                boardSize: 8,
+                fleet: [
+                    { name: "Cruiser", length: 4 },
+                    { name: "Frigate", length: 3 },
+                    { name: "Submarine", length: 3 },
+                    { name: "Patrol Boat", length: 2 },
+                    { name: "Scout", length: 2 }
+                ]
+            },
+            quick: {
+                label: "Quick 6x6",
+                boardSize: 6,
+                fleet: [
+                    { name: "Frigate", length: 3 },
+                    { name: "Patrol Boat", length: 2 },
+                    { name: "Scout", length: 2 }
+                ]
+            }
         };
-    
-        let deck = [];
-        let joueur1 = [];
-        let joueur2 = [];
-        let pointsJoueur1 = 0;
-        let pointsJoueur2 = 0;
-        let partieTerminee = false;
-    
-        function initializeGame() {
-            deck = [];
-            for (let couleur of couleurs) {
-                for (let nom of noms) {
-                    deck.push([nom, couleur]);
+
+        const INITIAL_MODE = "classic";
+
+        const state = {
+            mode: INITIAL_MODE,
+            boardSize: GAME_MODES[INITIAL_MODE].boardSize,
+            fleet: GAME_MODES[INITIAL_MODE].fleet,
+            phase: "setup",
+            currentPlayer: 0,
+            orientation: "horizontal",
+            mobileView: "own",
+            lastAction: "Tap Start, then place your first ship.",
+            lastActionType: "warn",
+            shotsFired: [0, 0],
+            players: [
+                createPlayerState("Player 1", GAME_MODES[INITIAL_MODE].boardSize),
+                createPlayerState("Player 2", GAME_MODES[INITIAL_MODE].boardSize)
+            ],
+            winner: null
+        };
+
+        const modeBtn = document.getElementById("modeBtn");
+        const statusTitle = document.getElementById("statusTitle");
+        const statusCopy = document.getElementById("statusCopy");
+        const rotateBtn = document.getElementById("rotateBtn");
+        const focusOwnBtn = document.getElementById("focusOwnBtn");
+        const focusTargetBtn = document.getElementById("focusTargetBtn");
+        const mobileOwnTab = document.getElementById("mobileOwnTab");
+        const mobileTargetTab = document.getElementById("mobileTargetTab");
+        const restartBtn = document.getElementById("restartBtn");
+        const fleetList = document.getElementById("fleetList");
+        const nextShipPreview = document.getElementById("nextShipPreview");
+        const phaseLabel = document.getElementById("phaseLabel");
+        const turnLabel = document.getElementById("turnLabel");
+        const orientationLabel = document.getElementById("orientationLabel");
+        const actionFeed = document.getElementById("actionFeed");
+        const battleStatusPanel = document.getElementById("battleStatusPanel");
+        const ownBoardTitle = document.getElementById("ownBoardTitle");
+        const ownBoardCopy = document.getElementById("ownBoardCopy");
+        const targetBoardTitle = document.getElementById("targetBoardTitle");
+        const targetBoardCopy = document.getElementById("targetBoardCopy");
+        const ownBoardPanel = document.getElementById("ownBoardPanel");
+        const targetBoardPanel = document.getElementById("targetBoardPanel");
+        const rightInfoColumn = document.getElementById("rightInfoColumn");
+        const p1ShipsLeft = document.getElementById("p1ShipsLeft");
+        const p2ShipsLeft = document.getElementById("p2ShipsLeft");
+        const ownBoard = document.getElementById("ownBoard");
+        const targetBoard = document.getElementById("targetBoard");
+        const overlay = document.getElementById("overlay");
+        const overlayTitle = document.getElementById("overlayTitle");
+        const overlayCopy = document.getElementById("overlayCopy");
+        const overlayBtn = document.getElementById("overlayBtn");
+
+        modeBtn.addEventListener("click", toggleGameMode);
+
+        rotateBtn.addEventListener("click", () => {
+            state.orientation = state.orientation === "horizontal" ? "vertical" : "horizontal";
+            render();
+        });
+
+        restartBtn.addEventListener("click", resetGame);
+        overlayBtn.addEventListener("click", handleOverlayAction);
+        focusOwnBtn.addEventListener("click", () => setMobileView("own"));
+        focusTargetBtn.addEventListener("click", () => setMobileView("target"));
+        mobileOwnTab.addEventListener("click", () => setMobileView("own"));
+        mobileTargetTab.addEventListener("click", () => setMobileView("target"));
+
+        function createBoard(boardSize) {
+            return Array.from({ length: boardSize }, () => Array.from({ length: boardSize }, () => ({
+                shipId: null,
+                hit: false,
+                miss: false
+            })));
+        }
+
+        function createPlayerState(name, boardSize) {
+            return {
+                name,
+                board: createBoard(boardSize),
+                ships: [],
+                nextShipIndex: 0
+            };
+        }
+
+        function currentPlayerState() {
+            return state.players[state.currentPlayer];
+        }
+
+        function opponentPlayerState() {
+            return state.players[state.currentPlayer === 0 ? 1 : 0];
+        }
+
+        function playerTheme(name) {
+            return name === "Player 1"
+                ? { sea: "var(--p1-sea)", sea2: "var(--p1-sea2)" }
+                : { sea: "var(--p2-sea)", sea2: "var(--p2-sea2)" };
+        }
+
+        function setMobileView(view) {
+            state.mobileView = view;
+            renderBoardVisibility();
+            renderTabState();
+        }
+
+        function modeLabel() {
+            return GAME_MODES[state.mode].label;
+        }
+
+        function setAction(message, type) {
+            state.lastAction = message;
+            state.lastActionType = type || "warn";
+        }
+
+        function toggleGameMode() {
+            state.mode = state.mode === "classic" ? "quick" : "classic";
+            state.boardSize = GAME_MODES[state.mode].boardSize;
+            state.fleet = GAME_MODES[state.mode].fleet;
+            resetGame();
+        }
+
+        function resetGame() {
+            state.phase = "setup";
+            state.currentPlayer = 0;
+            state.orientation = "horizontal";
+            state.mobileView = "own";
+            setAction("Placement started. Tap a cell to place your first ship.", "warn");
+            state.shotsFired = [0, 0];
+            state.players = [
+                createPlayerState("Player 1", state.boardSize),
+                createPlayerState("Player 2", state.boardSize)
+            ];
+            state.winner = null;
+            showOverlay("Battleship", modeLabel() + " selected. Player 1 starts by placing every ship.", "Start");
+            render();
+        }
+
+        function buildWinSummary(winnerIndex) {
+            const loserIndex = winnerIndex === 0 ? 1 : 0;
+            const winner = state.players[winnerIndex].name;
+            const loser = state.players[loserIndex].name;
+            const shots = state.shotsFired[winnerIndex];
+            const fleetSize = state.fleet.length;
+            return winner + " sank all " + fleetSize + " enemy ships in " + shots + " shots against " + loser + ".";
+        }
+
+        function countShipsAfloat(player) {
+            return player.ships.filter((ship) => !ship.sunk).length;
+        }
+
+        function getPlacementCells(player, row, col) {
+            const shipDef = state.fleet[player.nextShipIndex];
+            if (!shipDef) return [];
+
+            const cells = [];
+            for (let offset = 0; offset < shipDef.length; offset += 1) {
+                const nextRow = row + (state.orientation === "vertical" ? offset : 0);
+                const nextCol = col + (state.orientation === "horizontal" ? offset : 0);
+                if (nextRow >= state.boardSize || nextCol >= state.boardSize) return [];
+                if (player.board[nextRow][nextCol].shipId !== null) return [];
+                cells.push([nextRow, nextCol]);
+            }
+            return cells;
+        }
+
+        function placeShip(row, col) {
+            const player = currentPlayerState();
+            const cells = getPlacementCells(player, row, col);
+            if (!cells.length) return false;
+
+            const shipDef = state.fleet[player.nextShipIndex];
+            const shipId = player.ships.length;
+            const ship = {
+                id: shipId,
+                name: shipDef.name,
+                length: shipDef.length,
+                cells,
+                hits: 0,
+                sunk: false
+            };
+
+            cells.forEach(([r, c]) => {
+                player.board[r][c].shipId = shipId;
+            });
+
+            player.ships.push(ship);
+            player.nextShipIndex += 1;
+            state.mobileView = "own";
+            setAction("Placed " + ship.name + " successfully.", "hit");
+
+            if (player.nextShipIndex === state.fleet.length) {
+                if (state.currentPlayer === 0) {
+                    state.phase = "handoffToP2";
+                    setAction("Player 1 fleet complete. Pass the phone.", "warn");
+                    showOverlay(
+                        "Pass to Player 2",
+                        "Player 1 has placed the full fleet. Hide the screen and hand over the phone.",
+                        "Player 2 takes over"
+                    );
+                } else {
+                    state.phase = "handoffToBattle";
+                    setAction("Both fleets ready. Battle starts now.", "warn");
+                    showOverlay(
+                        "Battle Begins",
+                        "Both fleets are ready. Hide the screen and give the phone to Player 1 for the first shot.",
+                        "Start Battle"
+                    );
                 }
             }
-            shuffle(deck);
-            joueur1 = deck.slice(0, 26);
-            joueur2 = deck.slice(26);
-            shuffle(joueur1);
-            shuffle(joueur2);
-            pointsJoueur1 = 0;
-            pointsJoueur2 = 0;
-            partieTerminee = false;
-            document.getElementById('player-score').textContent = pointsJoueur1;
-            document.getElementById('pc-score').textContent = pointsJoueur2;
-            document.getElementById('player-card').textContent = 'Cliquez pour jouer';
-            document.getElementById('pc-card').textContent = 'Carte PC';
+
+            render();
+            return true;
         }
-    
-        function shuffle(array) {
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
-            }
-        }
-    
-        function playRound() {
-            if (partieTerminee) return;
-            if (joueur1.length === 0 || joueur2.length === 0) {
-                terminerPartie();
+
+        function fireAt(row, col) {
+            const opponent = opponentPlayerState();
+            const targetCell = opponent.board[row][col];
+            if (targetCell.hit || targetCell.miss) {
+                setAction("You already fired at this cell.", "warn");
+                render();
                 return;
             }
-    
-            const carteJouee1 = joueur1.shift();
-            const carteJouee2 = joueur2.shift();
-    
-            document.getElementById('player-card').textContent = `${carteJouee1[0]}\n${carteJouee1[1]}`;
-            document.getElementById('pc-card').textContent = `${carteJouee2[0]}\n${carteJouee2[1]}`;
-    
-            const valeur1 = valeurs[carteJouee1[0]];
-            const valeur2 = valeurs[carteJouee2[0]];
-    
-            if (valeur1 > valeur2) {
-                pointsJoueur1++;
-            } else if (valeur2 > valeur1) {
-                pointsJoueur2++;
+
+            const shooterIndex = state.currentPlayer;
+            state.shotsFired[shooterIndex] += 1;
+
+            if (targetCell.shipId !== null) {
+                targetCell.hit = true;
+                const ship = opponent.ships[targetCell.shipId];
+                ship.hits += 1;
+                if (ship.hits >= ship.length) {
+                    ship.sunk = true;
+                    setAction("Direct hit. You sunk " + opponent.name + "'s " + ship.name + ".", "hit");
+                } else {
+                    setAction("Direct hit!", "hit");
+                }
+            } else {
+                targetCell.miss = true;
+                setAction("Miss. No ship there.", "miss");
             }
-    
-            document.getElementById('player-score').textContent = pointsJoueur1;
-            document.getElementById('pc-score').textContent = pointsJoueur2;
-    
-            if (joueur1.length === 0 || joueur2.length === 0) {
-                terminerPartie();
+
+            if (countShipsAfloat(opponent) === 0) {
+                state.phase = "gameOver";
+                state.winner = state.players[shooterIndex].name;
+                setAction(state.winner + " won the battle.", "hit");
+                showOverlay(state.winner + " wins", buildWinSummary(shooterIndex), "Play Again");
+                render();
+                return;
+            }
+
+            state.currentPlayer = state.currentPlayer === 0 ? 1 : 0;
+            state.phase = "turnHandoff";
+            state.mobileView = "own";
+            showOverlay(
+                currentPlayerState().name + "'s turn",
+                "Hide the screen before passing the phone.",
+                currentPlayerState().name + " continue"
+            );
+            render();
+        }
+
+        function handleOwnBoardClick(row, col) {
+            if (state.phase !== "setup") return;
+            const placed = placeShip(row, col);
+            if (!placed) {
+                setAction("Invalid placement. Try another cell or rotate.", "warn");
+                render();
             }
         }
-    
-        function terminerPartie() {
-            partieTerminee = true;
-            let message = pointsJoueur1 > pointsJoueur2 ? "Bravo c'est gagné !" : pointsJoueur2 > pointsJoueur1 ? "La technologie a encore gagné !" : "Match nul !";
-            alert(message);
+
+        function handleTargetBoardClick(row, col) {
+            if (state.phase !== "battle") return;
+            fireAt(row, col);
         }
-    
-        document.getElementById('player-card').addEventListener('click', playRound);
-        document.getElementById('restart-game').addEventListener('click', initializeGame);
-    
-        initializeGame();
+
+        function handleOverlayAction() {
+            if (state.phase === "setup") {
+                hideOverlay();
+                render();
+                return;
+            }
+
+            if (state.phase === "handoffToP2") {
+                state.currentPlayer = 1;
+                state.phase = "setup";
+                state.orientation = "horizontal";
+                state.mobileView = "own";
+                hideOverlay();
+                render();
+                return;
+            }
+
+            if (state.phase === "handoffToBattle") {
+                state.currentPlayer = 0;
+                state.phase = "battle";
+                state.mobileView = "target";
+                hideOverlay();
+                render();
+                return;
+            }
+
+            if (state.phase === "turnHandoff") {
+                state.phase = "battle";
+                state.mobileView = "target";
+                hideOverlay();
+                render();
+                return;
+            }
+
+            if (state.phase === "gameOver") {
+                resetGame();
+            }
+        }
+
+        function showOverlay(title, copy, buttonLabel) {
+            overlayTitle.textContent = title;
+            overlayCopy.textContent = copy;
+            overlayBtn.textContent = buttonLabel;
+            overlay.querySelector(".overlay-card").classList.toggle("win", state.phase === "gameOver");
+            overlay.classList.remove("hidden");
+        }
+
+        function hideOverlay() {
+            overlay.classList.add("hidden");
+        }
+
+        function getSegmentClass(ship, row, col) {
+            if (!ship || !ship.cells.length) return "";
+            if (ship.cells.length === 1) return "single";
+
+            const first = ship.cells[0];
+            const last = ship.cells[ship.cells.length - 1];
+            const horizontal = first[0] === last[0];
+
+            if (horizontal) {
+                if (col === first[1]) return "start-h";
+                if (col === last[1]) return "end-h";
+                return "mid-h";
+            }
+
+            if (row === first[0]) return "start-v";
+            if (row === last[0]) return "end-v";
+            return "mid-v";
+        }
+
+        function renderBoard(container, player, options) {
+            container.innerHTML = "";
+            const previewShip = options.previewCells.length ? { cells: options.previewCells } : null;
+            container.style.gridTemplateColumns = "repeat(" + state.boardSize + ", minmax(0, 1fr))";
+
+            for (let row = 0; row < state.boardSize; row += 1) {
+                for (let col = 0; col < state.boardSize; col += 1) {
+                    const cell = player.board[row][col];
+                    const button = document.createElement("button");
+                    button.type = "button";
+                    button.className = "cell";
+                    button.style.setProperty("--cell-sea", options.theme.sea);
+                    button.style.setProperty("--cell-sea2", options.theme.sea2);
+
+                    if (options.interactive) button.classList.add("interactive");
+                    if (options.blocked) button.classList.add("blocked");
+
+                    if (cell.hit) {
+                        const hitShip = cell.shipId !== null ? player.ships[cell.shipId] : null;
+                        if (options.revealSunkShips && hitShip && hitShip.sunk) {
+                            button.classList.add("sunk-ship", getSegmentClass(hitShip, row, col));
+                        } else {
+                            button.classList.add("hit");
+                        }
+                    } else if (cell.miss) {
+                        button.classList.add("miss");
+                    } else if (cell.shipId !== null && options.showShips) {
+                        const ship = player.ships[cell.shipId];
+                        button.classList.add("ship", getSegmentClass(ship, row, col));
+                    } else if (options.previewCellSet.has(row + "-" + col)) {
+                        button.classList.add("preview", getSegmentClass(previewShip, row, col));
+                    }
+
+                    button.disabled = !options.interactive || options.blocked;
+                    if (options.interactive) {
+                        button.addEventListener("click", () => options.onClick(row, col));
+                    }
+
+                    container.appendChild(button);
+                }
+            }
+        }
+
+        function renderFleet() {
+            const player = currentPlayerState();
+            fleetList.innerHTML = "";
+            nextShipPreview.innerHTML = "";
+
+            if (state.phase === "setup" && player.nextShipIndex < state.fleet.length) {
+                const ship = state.fleet[player.nextShipIndex];
+                const wrap = document.createElement("div");
+                wrap.textContent = "Next ship preview:";
+
+                const preview = document.createElement("span");
+                preview.className = "next-ship-preview " + state.orientation;
+                for (let i = 0; i < ship.length; i += 1) {
+                    preview.appendChild(document.createElement("i"));
+                }
+
+                nextShipPreview.append(wrap, preview);
+            }
+
+            state.fleet.forEach((ship, index) => {
+                const item = document.createElement("div");
+                item.className = "fleet-item";
+                if (index < player.nextShipIndex) item.classList.add("done");
+                if (index === player.nextShipIndex && state.phase === "setup") item.classList.add("active");
+
+                const left = document.createElement("span");
+                left.textContent = ship.name;
+
+                const right = document.createElement("span");
+                right.className = "ship-chip";
+                for (let i = 0; i < ship.length; i += 1) {
+                    right.appendChild(document.createElement("i"));
+                }
+
+                item.append(left, right);
+                fleetList.appendChild(item);
+            });
+        }
+
+        function renderLabels() {
+            const player = currentPlayerState();
+            const opponent = opponentPlayerState();
+            const setupMode = state.phase === "setup";
+            const battleMode = state.phase === "battle";
+
+            phaseLabel.textContent = setupMode ? "Placement" : battleMode ? "Battle" : state.phase === "gameOver" ? "Finished" : "Transition";
+            turnLabel.textContent = player.name;
+            orientationLabel.textContent = state.orientation === "horizontal" ? "Horizontal" : "Vertical";
+            rotateBtn.textContent = "Rotate: " + orientationLabel.textContent;
+            modeBtn.textContent = "Mode: " + modeLabel();
+            p1ShipsLeft.textContent = countShipsAfloat(state.players[0]) + " ships";
+            p2ShipsLeft.textContent = countShipsAfloat(state.players[1]) + " ships";
+            actionFeed.textContent = state.lastAction;
+            actionFeed.className = "action-value " + state.lastActionType;
+
+            if (setupMode) {
+                const nextShip = state.fleet[player.nextShipIndex];
+                statusTitle.textContent = player.name + " placement";
+                statusCopy.textContent = nextShip
+                    ? "Place " + nextShip.name + " (" + nextShip.length + " cells) on a " + state.boardSize + "x" + state.boardSize + " grid."
+                    : "The whole fleet has been placed.";
+                ownBoardTitle.textContent = player.name + " Grid";
+                ownBoardCopy.textContent = "Your ships stay visible here.";
+                targetBoardTitle.textContent = "Tracking Grid";
+                targetBoardCopy.textContent = "Inactive during placement.";
+                rotateBtn.disabled = false;
+                modeBtn.disabled = false;
+                focusTargetBtn.disabled = true;
+                mobileTargetTab.disabled = true;
+                return;
+            }
+
+            if (battleMode) {
+                statusTitle.textContent = player.name + "'s turn";
+                statusCopy.textContent = "Pick a cell on " + opponent.name + "'s grid.";
+                ownBoardTitle.textContent = player.name + " Fleet";
+                ownBoardCopy.textContent = "Your ships and enemy shots stay visible.";
+                targetBoardTitle.textContent = opponent.name + " Grid";
+                targetBoardCopy.textContent = "Enemy ships are hidden unless hit.";
+                rotateBtn.disabled = true;
+                modeBtn.disabled = true;
+                focusTargetBtn.disabled = false;
+                mobileTargetTab.disabled = false;
+                return;
+            }
+
+            if (state.phase === "gameOver") {
+                statusTitle.textContent = state.winner + " wins";
+                statusCopy.textContent = "One fleet has been completely sunk.";
+                ownBoardTitle.textContent = "Winning Fleet";
+                ownBoardCopy.textContent = "Final ship positions stay visible.";
+                targetBoardTitle.textContent = "Final Target";
+                targetBoardCopy.textContent = "Final impacts stay on display.";
+                rotateBtn.disabled = true;
+                modeBtn.disabled = false;
+                focusTargetBtn.disabled = false;
+                mobileTargetTab.disabled = false;
+                return;
+            }
+
+            statusTitle.textContent = "Pass the phone";
+            statusCopy.textContent = "Use the overlay to keep fleet positions secret.";
+            ownBoardTitle.textContent = "Own Grid";
+            ownBoardCopy.textContent = "Visible after handoff.";
+            targetBoardTitle.textContent = "Enemy Grid";
+            targetBoardCopy.textContent = "Visible after handoff.";
+            rotateBtn.disabled = true;
+            modeBtn.disabled = true;
+            focusTargetBtn.disabled = false;
+            mobileTargetTab.disabled = false;
+        }
+
+        function renderBoardVisibility() {
+            const mobile = window.innerWidth <= 740;
+            ownBoardPanel.classList.toggle("mobile-hidden", mobile && state.mobileView !== "own");
+            targetBoardPanel.classList.toggle("mobile-hidden", mobile && state.mobileView !== "target");
+        }
+
+        function renderTabState() {
+            [focusOwnBtn, mobileOwnTab].forEach((btn) => btn.classList.toggle("active", state.mobileView === "own"));
+            [focusTargetBtn, mobileTargetTab].forEach((btn) => btn.classList.toggle("active", state.mobileView === "target"));
+        }
+
+        function renderSetupMinimalLayout() {
+            const setupMode = state.phase === "setup";
+            battleStatusPanel.classList.toggle("hidden-minimal", setupMode);
+            rightInfoColumn.classList.toggle("hidden-minimal", setupMode);
+            targetBoardPanel.classList.toggle("hidden-minimal", setupMode);
+            focusTargetBtn.classList.toggle("hidden-minimal", setupMode);
+            mobileTargetTab.classList.toggle("hidden-minimal", setupMode);
+            if (setupMode) state.mobileView = "own";
+        }
+
+        function render() {
+            renderLabels();
+            renderFleet();
+            renderSetupMinimalLayout();
+            renderBoardVisibility();
+            renderTabState();
+
+            const player = currentPlayerState();
+            const opponent = opponentPlayerState();
+            const blocked = !overlay.classList.contains("hidden");
+            const ownTheme = playerTheme(player.name);
+            const targetTheme = playerTheme(opponent.name);
+
+            renderBoard(ownBoard, player, {
+                showShips: true,
+                interactive: state.phase === "setup" && !blocked,
+                blocked,
+                previewCells: [],
+                previewCellSet: new Set(),
+                theme: ownTheme,
+                onClick: handleOwnBoardClick
+            });
+
+            renderBoard(targetBoard, opponent, {
+                showShips: false,
+                revealSunkShips: true,
+                interactive: state.phase === "battle" && !blocked,
+                blocked: blocked || state.phase !== "battle",
+                previewCells: [],
+                previewCellSet: new Set(),
+                theme: targetTheme,
+                onClick: handleTargetBoardClick
+            });
+        }
+
+        window.addEventListener("resize", renderBoardVisibility);
+
+        showOverlay("Battleship", modeLabel() + " selected. Player 1 starts by placing every ship.", "Start");
+        render();
     </script>
 
+<style>
+#global-menu-home{position:fixed;top:12px;left:12px;z-index:9999;padding:8px 12px;border:2px solid #ff69b4;border-radius:10px;background:rgba(0,0,0,.72);color:#fff;text-decoration:none;font-family:"Press Start 2P",cursive;font-size:11px;line-height:1.2;box-shadow:0 0 10px rgba(255,105,180,.35)}
+#global-menu-home:hover{background:#ff69b4;color:#001a4d}
+</style>
+<a id="global-menu-home" href="../index.html" aria-label="Back to menu">Menu</a>
 </body>
 </html>
