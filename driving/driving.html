@@ -398,7 +398,8 @@ let score, coins, lives, distance;
 let baseSpeed, speedMult, nightMode;
 let nitro, nitroCooldown;
 let playerX, playerLane;
-let obstacles, rewards, particles, roadOffset, curbOffset;
+let obstacles = [], rewards = [], milestones = [], particles = [], roadOffset = 0, curbOffset = 0;
+let nextMilestone;
 let animId, lastTs;
 let bestScore = +localStorage.getItem('drive_best') || 0;
 
@@ -491,7 +492,7 @@ function initGame() {
   nitro = 1; nitroCooldown = 0;
   playerLane = 1;
   playerX = laneCenter(1);
-  obstacles = []; rewards = []; particles = [];
+  obstacles = []; rewards = []; milestones = []; nextMilestone = 500; particles = [];
   roadOffset = 0; curbOffset = 0;
   invincibleUntil = 0;
   updateUI();
@@ -519,6 +520,11 @@ function loop(ts) {
   curbOffset  = (curbOffset  + speed * dt) % 40;
   distance   += speed * dt * 0.12;
 
+  while (nextMilestone <= distance + 55) {
+    milestones.push({ distance: nextMilestone });
+    nextMilestone += 500;
+  }
+
   if (Math.random() < 0.022 * dt) spawnObstacle(speed);
   if (Math.random() < 0.014 * dt) spawnCoin();
 
@@ -529,16 +535,24 @@ function loop(ts) {
   obstacles.forEach(o => {
     o.y += (speed + o.relSpeed) * dt;
     if (Math.random() < 0.003 * dt && !o.changing) {
-      o.targetLane = Math.floor(Math.random()*LANES);
-      o.changing = true;
+      const lanes = [0, 1, 2]
+        .filter(lane => lane !== o.lane && canUseLane(o, lane))
+        .sort(() => Math.random() - 0.5);
+      if (lanes.length) {
+        o.targetLane = lanes[0];
+        o.changing = true;
+      }
     }
     if (o.changing) {
       const tx = laneCenter(o.targetLane);
-      if (Math.abs(o.x - tx) < 2) { o.x = tx; o.changing = false; }
+      if (Math.abs(o.x - tx) < 2) {
+        o.x = tx; o.lane = o.targetLane; o.changing = false;
+      }
       else o.x += (tx - o.x) * 0.08 * dt;
     }
   });
   obstacles = obstacles.filter(o => o.y < H + 120);
+  milestones = milestones.filter(m => distance - m.distance < 70);
 
   rewards.forEach(r => { r.y += speed * dt; r.spin += 0.1 * dt; });
   rewards = rewards.filter(r => r.y < H + 60);
@@ -600,10 +614,21 @@ function flashHit() {
   setTimeout(()=>{ hitFlash.style.background='rgba(231,76,60,0)'; }, 200);
 }
 
+function canUseLane(obstacle, targetLane) {
+  return obstacles.every(other => {
+    if (other === obstacle) return true;
+    const occupiedLane = other.changing ? other.targetLane : other.lane;
+    return occupiedLane !== targetLane || Math.abs(other.y - obstacle.y) > CAR_H + 24;
+  });
+}
+
 function spawnObstacle(speed) {
   const lane = Math.floor(Math.random()*LANES);
-  const tooClose = obstacles.some(o=>o.y > -200 && Math.abs(o.x - laneCenter(lane))<10);
-  if (tooClose && Math.random()<.7) return;
+  const tooClose = obstacles.some(o => {
+    const occupiedLane = o.changing ? o.targetLane : o.lane;
+    return occupiedLane === lane && o.y > -CAR_H * 2.5;
+  });
+  if (tooClose) return;
   obstacles.push({
     x: laneCenter(lane), y: -CAR_H,
     color: OBS_COLORS[Math.floor(Math.random()*OBS_COLORS.length)],
@@ -690,6 +715,8 @@ function draw() {
     ctx.fillRect(ROAD_X+ROAD_W, yy, 8, 40);
   }
 
+  milestones.forEach(m => drawMilestone(m));
+
   if (nightMode) {
     const cone = ctx.createRadialGradient(playerX,H-130,10,playerX,H-130,220);
     cone.addColorStop(0,'rgba(255,250,200,.18)');
@@ -723,6 +750,35 @@ function draw() {
   });
 
   drawPlayerCar(playerX, H-100, '#33A8C7', Date.now() < invincibleUntil);
+}
+
+function drawMilestone(milestone) {
+  const gateY = H - 100 - (milestone.distance - distance) / 0.12;
+  if (gateY < -90 || gateY > H + 100) return;
+
+  const leftPost = ROAD_X + 14;
+  const rightPost = ROAD_X + ROAD_W - 14;
+  const top = gateY - 58;
+  ctx.save();
+  ctx.lineWidth = 7;
+  ctx.strokeStyle = nightMode ? '#ffdc4a' : '#e74c3c';
+  ctx.shadowBlur = nightMode ? 14 : 0;
+  ctx.shadowColor = ctx.strokeStyle;
+  ctx.beginPath();
+  ctx.moveTo(leftPost, gateY + 35);
+  ctx.lineTo(leftPost, top + 10);
+  ctx.quadraticCurveTo((leftPost + rightPost) / 2, top - 18, rightPost, top + 10);
+  ctx.lineTo(rightPost, gateY + 35);
+  ctx.stroke();
+  ctx.fillStyle = '#ffcc00';
+  ctx.fillRect(leftPost - 7, gateY + 28, 14, 7);
+  ctx.fillRect(rightPost - 7, gateY + 28, 14, 7);
+  ctx.font = 'bold 10px monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#fff8c0';
+  ctx.fillText(`${milestone.distance} m`, (leftPost + rightPost) / 2, top + 6);
+  ctx.restore();
 }
 
 function drawClouds() {

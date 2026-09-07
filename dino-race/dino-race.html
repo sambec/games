@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dino Dash</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+:root { --ink:#17151d; --cream:#fff3c4; --yellow:#ffd447; --red:#ef5d4e; --green:#6fc66b; --jungle:#163b35; }
+* { box-sizing:border-box; }
+body { margin:0; min-height:100vh; padding:14px 12px 30px; color:var(--cream); background:#11151b; font-family:'Press Start 2P', monospace; display:flex; flex-direction:column; align-items:center; }
+header { text-align:center; margin:10px 0 14px; }
+h1 { margin:0; color:var(--yellow); font-size:clamp(1.25rem,5vw,2.2rem); text-shadow:4px 4px 0 #a93b35; }
+header p { color:#b8d5a2; font-size:.52rem; line-height:1.8; margin:.75rem 0 0; }
+.hud { width:min(720px,100%); display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:10px; }
+.stat { min-width:0; padding:10px 7px; color:var(--ink); background:var(--cream); border:3px solid var(--ink); box-shadow:3px 3px 0 #000; text-align:center; }
+.stat strong { display:block; color:#5b3d26; font-size:.42rem; margin-bottom:8px; }
+.stat span { font-size:clamp(.55rem,2.5vw,.78rem); white-space:nowrap; }
+.progress { width:min(560px,100%); margin:0 auto 10px; padding:8px 10px; color:var(--cream); background:#17151d; border:3px solid var(--cream); box-shadow:3px 3px 0 #000; font-size:.45rem; }
+.progress-label { display:flex; justify-content:space-between; gap:10px; margin-bottom:6px; }
+.progress-track { height:10px; background:#332d35; border:2px solid #000; }
+.progress-fill { width:0; height:100%; background:#79d65f; transition:width .15s; }
+.stage { width:min(560px,100%); border:5px solid var(--cream); box-shadow:7px 7px 0 #000; position:relative; overflow:hidden; background:#28634a; }
+canvas { display:block; width:100%; height:auto; image-rendering:pixelated; }
+#overlay { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; padding:24px; text-align:center; background:rgba(10,18,20,.88); }
+#overlay.hidden { display:none; }
+#overlay h2 { color:var(--yellow); font-size:clamp(1rem,4vw,1.55rem); line-height:1.6; margin:0; text-shadow:3px 3px #a93b35; }
+#overlay p { max-width:450px; color:#d8e8bd; font-size:.52rem; line-height:2.1; margin:0; }
+button { font:inherit; cursor:pointer; border:3px solid var(--ink); background:var(--yellow); color:var(--ink); box-shadow:0 5px 0 #a97818; padding:12px 17px; font-size:.58rem; }
+button:active { transform:translateY(4px); box-shadow:0 1px 0 #a97818; }
+.controls { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin:18px auto 0; }
+.controls button { background:#ef785d; color:#fff3c4; box-shadow:0 4px 0 #8e332f; }
+.touch { display:none; margin-top:15px; gap:8px; flex-direction:column; align-items:center; }
+.touch .row { display:flex; gap:8px; }
+.touch button { width:58px; height:46px; padding:0; }
+.hint { color:#849f89; font-size:.44rem; line-height:2; text-align:center; margin:16px 0 0; }
+@media (max-width:560px) { .hud { gap:4px; } .stat { padding:8px 3px; } .stat strong { font-size:.34rem; } .touch { display:flex; } }
+</style>
+</head>
+<body>
+<header><h1>DINO DASH 🦕</h1><p>Play as a Diplodocus · Drink water · Eat greenery</p></header>
+<section class="hud" aria-label="Game statistics">
+  <div class="stat"><strong>SCORE</strong><span id="score">0</span></div>
+  <div class="stat"><strong>TIME</strong><span id="time">0.0 s</span></div>
+  <div class="stat"><strong>BOOST</strong><span id="boost">READY</span></div>
+  <div class="stat"><strong>BEST</strong><span id="best">0</span></div>
+</section>
+<section class="progress" aria-label="Food progression">
+  <div class="progress-label"><span>FOOD PROGRESS</span><span id="foodCount">0 / 20</span></div>
+  <div class="progress-track"><div class="progress-fill" id="foodProgress"></div></div>
+</section>
+<div class="stage">
+  <canvas id="game" width="560" height="440" aria-label="Dino Dash game"></canvas>
+  <div id="overlay">
+    <h2>DINO DASH</h2>
+    <p>Arrow keys or WASD to roam.<br>🦕 Drink 💧 water and eat 🌳 trees.<br>Press SPACE to stomp 🦖 rivals!</p>
+    <button id="start">▶ START RUN</button>
+  </div>
+</div>
+<div class="controls"><button id="sound">♫ SOUND ON</button><button id="pause">Ⅱ PAUSE</button></div>
+<div class="touch"><div class="row"><button data-key="up">▲</button></div><div class="row"><button data-key="left">◀</button><button data-key="down">▼</button><button data-key="right">▶</button></div></div>
+<p class="hint">Avoid rocks, lava and rival dinos · Survive as long as you can</p>
+<script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+const scoreEl = document.getElementById('score'), timeEl = document.getElementById('time');
+const boostEl = document.getElementById('boost'), bestEl = document.getElementById('best');
+const foodProgressEl = document.getElementById('foodProgress'), foodCountEl = document.getElementById('foodCount');
+const overlay = document.getElementById('overlay'), startButton = document.getElementById('start');
+const keys = { up:false, down:false, left:false, right:false };
+let player, things, particles, score, elapsed, foodEaten, best = +localStorage.getItem('dino_dash_best') || 0;
+let running = false, paused = false, lastTime = 0, spawnClock = 0, boostUntil = 0, stompUntil = 0, soundOn = true, audio;
+bestEl.textContent = best;
+
+function reset() {
+  player = { x:W/2, y:H-72, w:38, h:48, growth:1, invincible:0 };
+  things = []; particles = []; score = 0; elapsed = 0; foodEaten = 0; spawnClock = 0; boostUntil = 0; stompUntil = 0;
+  updateHud(); draw();
+}
+function startGame() { reset(); running = true; paused = false; overlay.classList.add('hidden'); lastTime = performance.now(); requestAnimationFrame(loop); }
+function endGame() {
+  running = false; roar();
+  if (score > best) { best = score; localStorage.setItem('dino_dash_best', best); }
+  bestEl.textContent = best;
+  overlay.innerHTML = `<h2>EXTINCTION EVENT!<br>GAME OVER</h2><p>Score: ${score} · Survival: ${elapsed.toFixed(1)} s</p><button id="restart">▶ RUN AGAIN</button>`;
+  overlay.classList.remove('hidden'); document.getElementById('restart').onclick = startGame;
+}
+function loop(now) {
+  if (!running) return;
+  if (paused) { lastTime = now; requestAnimationFrame(loop); return; }
+  const dt = Math.max(0, Math.min((now-lastTime)/1000, .04)); lastTime = now; elapsed += dt;
+  player.invincible = Math.max(0, player.invincible - dt);
+  const boosted = now < boostUntil;
+  const stomping = now < stompUntil;
+  const speed = (boosted ? 245 : 155) * dt;
+  movePlayer((boosted ? 1.15 : 1) * 210 * dt);
+  spawnClock += dt;
+  if (spawnClock > Math.max(.38, .9 - elapsed * .012)) { spawnClock = 0; spawnThing(); }
+  things.forEach(thing => { thing.y += speed * (thing.kind === 'rival' ? thing.drift : 1); thing.x += (thing.kind === 'rival' ? Math.sin((elapsed+thing.phase)*3)*.45 : 0); });
+  things = things.filter(thing => thing.y < H+70);
+  things.forEach((thing, index) => { if (overlap(player, thing)) collectOrHit(thing, index, stomping); });
+  particles.forEach(p => { p.x += p.vx*dt; p.y += p.vy*dt; p.life -= dt*2.5; });
+  particles = particles.filter(p => p.life > 0);
+  score += Math.floor(dt * (boosted ? 18 : 10)); updateHud(); draw(); requestAnimationFrame(loop);
+}
+function movePlayer(amount) {
+  if (keys.left) player.x -= amount; if (keys.right) player.x += amount;
+  if (keys.up) player.y -= amount; if (keys.down) player.y += amount;
+  player.x = Math.max(28, Math.min(W-28, player.x)); player.y = Math.max(55, Math.min(H-34, player.y));
+}
+function spawnThing() {
+  const roll = Math.random();
+  let kind = roll < .22 ? 'rock' : roll < .36 ? 'lava' : roll < .58 ? 'rival' : roll < .73 ? 'water' : roll < .88 ? 'tree' : roll < .95 ? 'fern' : 'meteor';
+  things.push({ kind, x:40+Math.random()*(W-80), y:-35, r:kind==='lava'?24:kind==='rival'?22:18, drift:.78+Math.random()*.45, phase:Math.random()*6 });
+}
+function overlap(a,b) { return Math.abs(a.x-b.x) < a.w/2+b.r*.65 && Math.abs(a.y-b.y) < a.h/2+b.r*.65; }
+function collectOrHit(thing, index, stomping) {
+  things.splice(index,1);
+  if (thing.kind === 'rival' && stomping) { score += 100; burst(thing.x,thing.y,'#ffd447'); chirp(220); return; }
+  if (thing.kind === 'rock' || thing.kind === 'lava' || thing.kind === 'rival') { if (player.invincible > 0) return; player.invincible = 1.2; burst(player.x,player.y,'#ef5d4e'); roar(); score = Math.max(0, score-25); return; }
+  if (thing.kind === 'meteor') { boostUntil = performance.now()+5000; score += 100; burst(thing.x,thing.y,'#ffd447'); chirp(440); return; }
+  foodEaten++;
+  player.growth = 1 + Math.floor(foodEaten / 20) * .1;
+  player.w = 38 * player.growth;
+  player.h = 48 * player.growth;
+  score += thing.kind === 'water' ? 75 : thing.kind === 'tree' ? 50 : 25; burst(thing.x,thing.y,thing.kind==='fern' || thing.kind==='tree'?'#8ee36e':'#75d7ff'); chirp(thing.kind==='tree'?660:520);
+}
+function updateHud() { scoreEl.textContent=score; timeEl.textContent=elapsed.toFixed(1)+' s'; const remaining=Math.max(0,boostUntil-performance.now()); boostEl.textContent=remaining?'READY '+(remaining/1000).toFixed(1)+'s':'READY'; const cycleFood=foodEaten%20 || (foodEaten ? 20 : 0); foodCountEl.textContent=`${foodEaten} eaten`; foodProgressEl.style.width=cycleFood/20*100+'%'; }
+function burst(x,y,color) { for(let i=0;i<10;i++) particles.push({x,y,vx:(Math.random()-.5)*100,vy:(Math.random()-.5)*100,life:1,color}); }
+function draw() { drawWorld(); things.forEach(drawThing); particles.forEach(p=>{ctx.globalAlpha=p.life;ctx.fillStyle=p.color;ctx.fillRect(p.x,p.y,5,5);});ctx.globalAlpha=1;drawDino(player.x,player.y,player.invincible>0,performance.now()<stompUntil); }
+function drawWorld() {
+  ctx.fillStyle='#050708'; ctx.fillRect(0,0,W,H); ctx.fillStyle='#101d19';
+  for(let y=-40;y<H;y+=40){ const yy=(y+(elapsed*70)%40); ctx.fillRect(0,yy,W,16); }
+  ctx.fillStyle='#28634a'; ctx.fillRect(0,0,70,H); ctx.fillRect(W-70,0,70,H);
+  for(let y=22;y<H;y+=78){ drawPalm(28,y); drawPalm(W-28,y+28); }
+  ctx.fillStyle='rgba(255,174,77,.9)'; ctx.beginPath();ctx.arc(W-112,58,25,0,Math.PI*2);ctx.fill();
+}
+function drawPalm(x,y) { ctx.strokeStyle='#19483c';ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(x,y+24);ctx.lineTo(x+3,y);ctx.stroke();ctx.fillStyle='#235b43';for(let i=0;i<5;i++){ctx.beginPath();ctx.ellipse(x+3+Math.cos(i*1.25)*13,y+Math.sin(i*1.25)*7,14,4,i*1.25,0,Math.PI*2);ctx.fill();} }
+function drawEmoji(emoji, x, y, size, blink=false) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.globalAlpha = blink ? .45 : 1;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = `${size}px "Apple Color Emoji", "Segoe UI Emoji", sans-serif`;
+  ctx.shadowColor = 'rgba(23,21,29,.65)';
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetX = 3;
+  ctx.shadowOffsetY = 4;
+  ctx.fillText(emoji, 0, 0);
+  ctx.restore();
+}
+function drawDino(x,y,blink,stomping=false) { drawEmoji('🦕', x, y, (stomping ? 72 : 58) * player.growth, blink); }
+function drawThing(t) {
+  const emoji = { rock:'🪨', lava:'🌋', rival:'🦖', tree:'🌳', water:'💧', fern:'🌿', meteor:'☄️' }[t.kind];
+  drawEmoji(emoji, t.x, t.y, t.kind === 'meteor' ? 40 : 42);
+  if (t.kind === 'meteor') {
+    ctx.save();
+    ctx.fillStyle = '#fff3c4';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('BOOST', t.x, t.y - 25);
+    ctx.restore();
+  }
+}
+function chirp(freq) { if(!soundOn)return; initAudio();const o=audio.createOscillator(),g=audio.createGain();o.frequency.value=freq;o.type='square';g.gain.setValueAtTime(.04,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+.13);o.connect(g).connect(audio.destination);o.start();o.stop(audio.currentTime+.13); }
+function roar() { if(!soundOn)return; initAudio();const o=audio.createOscillator(),g=audio.createGain();o.type='sawtooth';o.frequency.setValueAtTime(100,audio.currentTime);o.frequency.exponentialRampToValueAtTime(45,audio.currentTime+.45);g.gain.setValueAtTime(.08,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+.45);o.connect(g).connect(audio.destination);o.start();o.stop(audio.currentTime+.45); }
+function initAudio() { if(!audio) audio=new (window.AudioContext||window.webkitAudioContext)(); if(audio.state==='suspended')audio.resume(); }
+function stomp() { if(running && !paused) { stompUntil = performance.now()+650; chirp(180); } }
+function bindKey(code,down) { if(code==='ArrowUp'||code==='KeyW')keys.up=down;if(code==='ArrowDown'||code==='KeyS')keys.down=down;if(code==='ArrowLeft'||code==='KeyA')keys.left=down;if(code==='ArrowRight'||code==='KeyD')keys.right=down; }
+document.addEventListener('keydown',e=>{if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();if(e.code==='Space'){stomp();return;}bindKey(e.code,true);});document.addEventListener('keyup',e=>bindKey(e.code,false));
+document.querySelectorAll('[data-key]').forEach(button=>{const key=button.dataset.key;button.addEventListener('touchstart',e=>{e.preventDefault();keys[key]=true;},{passive:false});button.addEventListener('touchend',e=>{e.preventDefault();keys[key]=false;},{passive:false});});
+startButton.onclick=()=>{initAudio();startGame()};document.getElementById('pause').onclick=()=>{if(running)paused=!paused};document.getElementById('sound').onclick=e=>{soundOn=!soundOn;e.currentTarget.textContent=soundOn?'♫ SOUND ON':'♫ SOUND OFF';if(soundOn)initAudio()};
+reset();
+</script>
+</body>
+</html>

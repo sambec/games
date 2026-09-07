@@ -1,0 +1,1523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Which Work Said It?</title>
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap");
+
+    :root {
+      --bg: #efe4d1;
+      --paper: #f8f2e7;
+      --paper-strong: #f1e5d4;
+      --ink: #2d241d;
+      --muted: #6e6155;
+      --line: rgba(79, 58, 40, 0.22);
+      --accent: #7b3326;
+      --accent-soft: #b8644d;
+      --highlight: #2f5d50;
+      --gold: #b88937;
+      --shadow: rgba(48, 29, 15, 0.12);
+      --wrong: #8f3a2f;
+      --right: #2e6a52;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: "Cormorant Garamond", Georgia, serif;
+      background:
+        radial-gradient(circle at top, rgba(255, 248, 236, 0.9), transparent 34%),
+        linear-gradient(145deg, #e8d9c1 0%, #efe4d1 42%, #e5d1b5 100%);
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.2;
+      background-image:
+        linear-gradient(rgba(89, 63, 43, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(89, 63, 43, 0.02) 1px, transparent 1px);
+      background-size: 100% 5px, 5px 100%;
+      mix-blend-mode: multiply;
+    }
+
+    .page {
+      width: min(1120px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 28px 0 36px;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 18px;
+      align-items: stretch;
+      margin-bottom: 18px;
+    }
+
+    .panel,
+    .game-card,
+    .result-card,
+    .choice,
+    .summary-card {
+      background: rgba(248, 242, 231, 0.88);
+      backdrop-filter: blur(6px);
+      border: 1px solid var(--line);
+      box-shadow: 0 16px 30px var(--shadow);
+    }
+
+    .hero-main {
+      border-radius: 26px;
+      padding: 28px 28px 24px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-main::after {
+      content: "";
+      position: absolute;
+      inset: auto -80px -90px auto;
+      width: 240px;
+      height: 240px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(184, 137, 55, 0.16), transparent 68%);
+    }
+
+    .eyebrow,
+    .panel-label,
+    .pill,
+    .mini-label {
+      font-family: "IBM Plex Mono", monospace;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .eyebrow {
+      font-size: 0.72rem;
+      color: var(--accent);
+      margin-bottom: 10px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2.5rem, 5vw, 4.4rem);
+      line-height: 0.9;
+      font-weight: 700;
+      max-width: 11ch;
+    }
+
+    .hero-copy {
+      max-width: 56ch;
+      font-size: 1.2rem;
+      line-height: 1.2;
+      color: var(--muted);
+      margin: 12px 0 0;
+    }
+
+    .hero-side {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+    }
+
+    .panel {
+      border-radius: 20px;
+      padding: 16px 18px;
+      min-height: 118px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .panel-label {
+      font-size: 0.68rem;
+      color: var(--muted);
+    }
+
+    .panel-value {
+      font-size: clamp(1.8rem, 3vw, 2.5rem);
+      line-height: 1;
+      font-weight: 700;
+    }
+
+    .panel-sub {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .game-card {
+      border-radius: 30px;
+      padding: 22px;
+    }
+
+    .meta-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: var(--paper-strong);
+      color: var(--muted);
+      font-size: 0.72rem;
+      border: 1px solid var(--line);
+    }
+
+    .difficulty {
+      display: flex;
+      gap: 5px;
+    }
+
+    .difficulty span {
+      width: 22px;
+      height: 6px;
+      border-radius: 999px;
+      background: rgba(123, 51, 38, 0.14);
+    }
+
+    .difficulty span.active {
+      background: var(--accent);
+    }
+
+    .quote-card {
+      padding: 28px 22px 20px;
+      border-radius: 24px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.25), transparent),
+        linear-gradient(135deg, rgba(184, 137, 55, 0.12), rgba(47, 93, 80, 0.03)),
+        var(--paper);
+      border: 1px solid var(--line);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .quote-card::before,
+    .quote-card::after {
+      position: absolute;
+      font-size: 6rem;
+      line-height: 1;
+      color: rgba(123, 51, 38, 0.12);
+      font-weight: 700;
+    }
+
+    .quote-card::before {
+      content: "“";
+      top: 10px;
+      left: 12px;
+    }
+
+    .quote-card::after {
+      content: "”";
+      right: 18px;
+      bottom: -26px;
+    }
+
+    .quote {
+      margin: 0;
+      padding: 18px 14px 6px;
+      font-size: clamp(1.8rem, 4vw, 3rem);
+      line-height: 0.98;
+      text-wrap: balance;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hint-box {
+      margin-top: 16px;
+      min-height: 28px;
+      color: var(--muted);
+      font-size: 1.02rem;
+    }
+
+    .choices {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .choice {
+      border-radius: 22px;
+      padding: 18px 16px;
+      text-align: left;
+      cursor: pointer;
+      transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+      border: 1px solid transparent;
+      position: relative;
+      min-height: 152px;
+    }
+
+    .choice:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 20px 32px rgba(48, 29, 15, 0.16);
+      border-color: rgba(123, 51, 38, 0.24);
+    }
+
+    .choice:disabled {
+      cursor: default;
+    }
+
+    .choice-title {
+      font-size: 1.6rem;
+      line-height: 0.96;
+      font-weight: 600;
+      margin: 8px 0 12px;
+    }
+
+    .choice-meta {
+      color: var(--muted);
+      font-size: 1rem;
+      line-height: 1.1;
+    }
+
+    .mini-label {
+      color: var(--accent);
+      font-size: 0.68rem;
+    }
+
+    .choice.correct {
+      border-color: rgba(46, 106, 82, 0.5);
+      background: linear-gradient(180deg, rgba(46, 106, 82, 0.08), rgba(255, 255, 255, 0.25)), var(--paper);
+    }
+
+    .choice.incorrect {
+      border-color: rgba(143, 58, 47, 0.42);
+      background: linear-gradient(180deg, rgba(143, 58, 47, 0.08), rgba(255, 255, 255, 0.25)), var(--paper);
+    }
+
+    .choice.reveal {
+      border-color: rgba(184, 137, 55, 0.45);
+    }
+
+    .controls {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-top: 18px;
+    }
+
+    .button-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      font: inherit;
+      border: 0;
+    }
+
+    .btn {
+      border-radius: 999px;
+      padding: 10px 16px;
+      cursor: pointer;
+      transition: transform 160ms ease, opacity 160ms ease, background 160ms ease;
+    }
+
+    .btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      opacity: 0.94;
+    }
+
+    .btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff9f3;
+    }
+
+    .btn-secondary {
+      background: var(--paper-strong);
+      color: var(--ink);
+      border: 1px solid var(--line);
+    }
+
+    .feedback {
+      min-height: 28px;
+      font-size: 1.08rem;
+      color: var(--muted);
+    }
+
+    .feedback.good {
+      color: var(--right);
+    }
+
+    .feedback.bad {
+      color: var(--wrong);
+    }
+
+    .result-card {
+      margin-top: 18px;
+      border-radius: 28px;
+      padding: 20px;
+      display: none;
+    }
+
+    .result-card.visible {
+      display: block;
+    }
+
+    .result-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: end;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
+    .result-title {
+      margin: 0;
+      font-size: 2rem;
+      line-height: 0.95;
+    }
+
+    .result-copy {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 1rem;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .summary-card {
+      border-radius: 22px;
+      padding: 16px;
+      min-height: 210px;
+    }
+
+    .summary-card.correct {
+      outline: 2px solid rgba(46, 106, 82, 0.18);
+    }
+
+    .summary-card h3 {
+      margin: 6px 0 8px;
+      font-size: 1.5rem;
+      line-height: 0.98;
+    }
+
+    .summary-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 1rem;
+      line-height: 1.18;
+    }
+
+    .summary-link {
+      display: inline-block;
+      margin-top: 12px;
+      color: var(--accent);
+      text-decoration: none;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .summary-link:hover {
+      text-decoration: underline;
+    }
+
+    .footer-note {
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    @media (max-width: 980px) {
+      .hero {
+        grid-template-columns: 1fr;
+      }
+
+      .choices,
+      .summary-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .page {
+        width: min(100% - 18px, 1120px);
+        padding-top: 16px;
+      }
+
+      .hero-main,
+      .game-card,
+      .result-card {
+        border-radius: 24px;
+      }
+
+      .hero-main {
+        padding: 22px 20px;
+      }
+
+      .quote {
+        padding-inline: 10px;
+      }
+
+      .hero-side {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .panel {
+        min-height: 100px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <div class="hero-main panel">
+        <div class="eyebrow">Archive Arcade</div>
+        <h1>Which work said it?</h1>
+        <p class="hero-copy">
+          Guess where the quote comes from. Each round gives you three very nearby suspects:
+          same author, same era, same mood, or the same shelf entirely.
+        </p>
+      </div>
+
+      <div class="hero-side">
+        <article class="panel">
+          <div class="panel-label">Score</div>
+          <div id="score" class="panel-value">0</div>
+          <div class="panel-sub">+3 first try, +1 with hint</div>
+        </article>
+        <article class="panel">
+          <div class="panel-label">Streak</div>
+          <div id="streak" class="panel-value">0</div>
+          <div class="panel-sub">Keep the thread alive</div>
+        </article>
+        <article class="panel">
+          <div class="panel-label">Round</div>
+          <div id="round" class="panel-value">1</div>
+          <div class="panel-sub">Endless shuffled rounds</div>
+        </article>
+        <article class="panel">
+          <div class="panel-label">Mode</div>
+          <div id="clusterName" class="panel-value" style="font-size: 1.4rem;">Loading</div>
+          <div id="clusterType" class="panel-sub">Tight matchups only</div>
+        </article>
+      </div>
+    </section>
+
+    <section class="game-card">
+      <div class="meta-row">
+        <div class="pill">
+          <span>Cluster</span>
+          <strong id="clusterTag">Preparing round…</strong>
+        </div>
+        <div class="difficulty" id="difficulty" aria-label="difficulty meter">
+          <span></span><span></span><span></span>
+        </div>
+      </div>
+
+      <div class="quote-card">
+        <p id="quoteText" class="quote">Loading quote…</p>
+        <div id="hintBox" class="hint-box"></div>
+      </div>
+
+      <div id="choices" class="choices" aria-live="polite"></div>
+
+      <div class="controls">
+        <div class="button-row">
+          <button id="hintButton" class="btn btn-secondary" type="button">Reveal hint</button>
+          <button id="nextButton" class="btn btn-primary hidden" type="button">Next quote</button>
+        <button id="restartButton" class="btn btn-secondary" type="button">Reshuffle</button>
+        </div>
+        <div id="feedback" class="feedback">Pick the source work, not the author.</div>
+      </div>
+    </section>
+
+    <section id="resultCard" class="result-card" aria-live="polite">
+      <div class="result-header">
+        <div>
+          <div class="eyebrow">Reference Shelf</div>
+          <h2 id="resultTitle" class="result-title">Round notes</h2>
+          <p id="resultCopy" class="result-copy"></p>
+        </div>
+      </div>
+      <div id="summaryGrid" class="summary-grid"></div>
+      <p class="footer-note">
+        Quotes and summaries load live when available. If the APIs are unavailable, the game falls back to local notes and backup quotes so the single file still works.
+      </p>
+    </section>
+  </main>
+
+  <script>
+    const CLUSTERS = [
+      {
+        label: "Jane Austen novels",
+        theme: "same author",
+        difficulty: 3,
+        options: [
+          {
+            title: "Pride and Prejudice",
+            page: "Pride and Prejudice",
+            quotePage: "Pride and Prejudice",
+            type: "Book",
+            creator: "Jane Austen",
+            year: 1813,
+            fallbackQuotes: [
+              "I could easily forgive his pride, if he had not mortified mine.",
+              "Till this moment I never knew myself.",
+              "There is, I believe, in every disposition a tendency to some particular evil."
+            ],
+            offlineSummary: "Austen's novel of wit, manners, and the shifting relationship between Elizabeth Bennet and Fitzwilliam Darcy."
+          },
+          {
+            title: "Emma",
+            page: "Emma (novel)",
+            quotePage: "Emma (novel)",
+            type: "Book",
+            creator: "Jane Austen",
+            year: 1815,
+            fallbackQuotes: [
+              "I always deserve the best treatment because I never put up with any other.",
+              "If I loved you less, I might be able to talk about it more.",
+              "Seldom, very seldom, does complete truth belong to any human disclosure."
+            ],
+            offlineSummary: "Austen's comedy of matchmaking follows Emma Woodhouse as her confidence repeatedly outruns her judgment."
+          },
+          {
+            title: "Sense and Sensibility",
+            page: "Sense and Sensibility",
+            quotePage: "Sense and Sensibility",
+            type: "Book",
+            creator: "Jane Austen",
+            year: 1811,
+            fallbackQuotes: [
+              "Know your own happiness.",
+              "It isn't what we say or think that defines us, but what we do.",
+              "Time will not lessen it."
+            ],
+            offlineSummary: "Austen contrasts restraint and romantic intensity through the Dashwood sisters after their family's financial fall."
+          }
+        ]
+      },
+      {
+        label: "Russian giants",
+        theme: "same century",
+        difficulty: 3,
+        options: [
+          {
+            title: "Anna Karenina",
+            page: "Anna Karenina",
+            quotePage: "Anna Karenina",
+            type: "Book",
+            creator: "Leo Tolstoy",
+            year: 1878,
+            fallbackQuotes: [
+              "All happy families are alike; each unhappy family is unhappy in its own way.",
+              "If you look for perfection, you'll never be content.",
+              "Respect was invented to cover the empty place where love should be."
+            ],
+            offlineSummary: "Tolstoy's sweeping novel intertwines adultery, family life, and social change in imperial Russia."
+          },
+          {
+            title: "Crime and Punishment",
+            page: "Crime and Punishment",
+            quotePage: "Crime and Punishment",
+            type: "Book",
+            creator: "Fyodor Dostoevsky",
+            year: 1866,
+            fallbackQuotes: [
+              "Pain and suffering are always inevitable for a large intelligence and a deep heart.",
+              "To go wrong in one's own way is better than to go right in someone else's.",
+              "Man grows used to everything, the scoundrel."
+            ],
+            offlineSummary: "Dostoevsky's psychological novel follows Raskolnikov through murder, guilt, and moral unraveling in Saint Petersburg."
+          },
+          {
+            title: "The Brothers Karamazov",
+            page: "The Brothers Karamazov",
+            quotePage: "The Brothers Karamazov",
+            type: "Book",
+            creator: "Fyodor Dostoevsky",
+            year: 1880,
+            fallbackQuotes: [
+              "Above all, don't lie to yourself.",
+              "The mystery of human existence lies not in just staying alive, but in finding something to live for.",
+              "What is hell? I maintain that it is the suffering of being unable to love."
+            ],
+            offlineSummary: "Dostoevsky's final novel uses family conflict to stage spiritual, philosophical, and ethical debate."
+          }
+        ]
+      },
+      {
+        label: "Gothic and stormy",
+        theme: "same mood",
+        difficulty: 2,
+        options: [
+          {
+            title: "Jane Eyre",
+            page: "Jane Eyre",
+            quotePage: "Jane Eyre",
+            type: "Book",
+            creator: "Charlotte Bronte",
+            year: 1847,
+            fallbackQuotes: [
+              "I am no bird; and no net ensnares me.",
+              "I would always rather be happy than dignified.",
+              "Life appears to me too short to be spent in nursing animosity."
+            ],
+            offlineSummary: "Charlotte Bronte's novel follows Jane from hardship to self-possession, romance, and moral independence."
+          },
+          {
+            title: "Wuthering Heights",
+            page: "Wuthering Heights",
+            quotePage: "Wuthering Heights",
+            type: "Book",
+            creator: "Emily Bronte",
+            year: 1847,
+            fallbackQuotes: [
+              "Whatever our souls are made of, his and mine are the same.",
+              "Be with me always. Take any form. Drive me mad.",
+              "He's more myself than I am."
+            ],
+            offlineSummary: "Emily Bronte's singular novel binds love, vengeance, and inheritance on the Yorkshire moors."
+          },
+          {
+            title: "Dracula",
+            page: "Dracula",
+            quotePage: "Dracula",
+            type: "Book",
+            creator: "Bram Stoker",
+            year: 1897,
+            fallbackQuotes: [
+              "There are darknesses in life and there are lights.",
+              "Listen to them, the children of the night.",
+              "We learn from failure, not from success."
+            ],
+            offlineSummary: "Stoker's epistolary Gothic novel pits a circle of allies against Count Dracula's menace."
+          }
+        ]
+      },
+      {
+        label: "Dystopian shelf",
+        theme: "same genre",
+        difficulty: 2,
+        options: [
+          {
+            title: "Nineteen Eighty-Four",
+            page: "Nineteen Eighty-Four",
+            quotePage: "Nineteen Eighty-Four",
+            type: "Book",
+            creator: "George Orwell",
+            year: 1949,
+            fallbackQuotes: [
+              "Big Brother is Watching You.",
+              "War is peace. Freedom is slavery. Ignorance is strength.",
+              "If you want a picture of the future, imagine a boot stamping on a human face forever."
+            ],
+            offlineSummary: "Orwell's classic imagines surveillance, propaganda, and linguistic control under totalitarian rule."
+          },
+          {
+            title: "Brave New World",
+            page: "Brave New World",
+            quotePage: "Brave New World",
+            type: "Book",
+            creator: "Aldous Huxley",
+            year: 1932,
+            fallbackQuotes: [
+              "Words can be like X-rays if you use them properly.",
+              "Actual happiness always looks pretty squalid in comparison with the overcompensations for misery.",
+              "But I don't want comfort. I want God, I want poetry, I want real danger."
+            ],
+            offlineSummary: "Huxley's future society trades freedom and depth for stability, conditioning, and engineered pleasure."
+          },
+          {
+            title: "Fahrenheit 451",
+            page: "Fahrenheit 451",
+            quotePage: "Fahrenheit 451",
+            type: "Book",
+            creator: "Ray Bradbury",
+            year: 1953,
+            fallbackQuotes: [
+              "It was a pleasure to burn.",
+              "Stuff your eyes with wonder.",
+              "We need not to be let alone. We need to be really bothered once in a while."
+            ],
+            offlineSummary: "Bradbury's fireman begins by destroying books and ends by discovering what they preserve."
+          }
+        ]
+      },
+      {
+        label: "Mythic quests",
+        theme: "same world",
+        difficulty: 2,
+        options: [
+          {
+            title: "The Hobbit",
+            page: "The Hobbit",
+            quotePage: "The Hobbit",
+            type: "Book",
+            creator: "J. R. R. Tolkien",
+            year: 1937,
+            fallbackQuotes: [
+              "So comes snow after fire, and even dragons have their endings.",
+              "Never laugh at live dragons.",
+              "If more of us valued food and cheer and song above hoarded gold, it would be a merrier world."
+            ],
+            offlineSummary: "Tolkien's children's fantasy sends Bilbo Baggins on a reluctant adventure toward treasure and dragon-fire."
+          },
+          {
+            title: "The Fellowship of the Ring",
+            page: "The Fellowship of the Ring",
+            quotePage: "The Fellowship of the Ring",
+            type: "Book",
+            creator: "J. R. R. Tolkien",
+            year: 1954,
+            fallbackQuotes: [
+              "Not all those who wander are lost.",
+              "All we have to decide is what to do with the time that is given us.",
+              "Even the smallest person can change the course of the future."
+            ],
+            offlineSummary: "The first volume of The Lord of the Rings sets the Ring's journey in motion from the Shire to Rivendell and beyond."
+          },
+          {
+            title: "The Two Towers",
+            page: "The Two Towers",
+            quotePage: "The Two Towers",
+            type: "Book",
+            creator: "J. R. R. Tolkien",
+            year: 1954,
+            fallbackQuotes: [
+              "The board is set, the pieces are moving.",
+              "There is some good in this world, and it's worth fighting for.",
+              "The burned hand teaches best."
+            ],
+            offlineSummary: "The middle volume splits the fellowship while war, temptation, and endurance deepen across Middle-earth."
+          }
+        ]
+      },
+      {
+        label: "Shakespeare tragedies",
+        theme: "same author",
+        difficulty: 3,
+        options: [
+          {
+            title: "Hamlet",
+            page: "Hamlet",
+            quotePage: "Hamlet",
+            type: "Play",
+            creator: "William Shakespeare",
+            year: 1603,
+            fallbackQuotes: [
+              "To be, or not to be: that is the question.",
+              "Something is rotten in the state of Denmark.",
+              "There is nothing either good or bad, but thinking makes it so."
+            ],
+            offlineSummary: "Shakespeare's tragedy follows Prince Hamlet's grief, hesitation, and revenge after his father's death."
+          },
+          {
+            title: "Macbeth",
+            page: "Macbeth",
+            quotePage: "Macbeth",
+            type: "Play",
+            creator: "William Shakespeare",
+            year: 1623,
+            fallbackQuotes: [
+              "Fair is foul, and foul is fair.",
+              "Out, damned spot.",
+              "Tomorrow, and tomorrow, and tomorrow."
+            ],
+            offlineSummary: "Shakespeare's tragedy charts ambition, prophecy, and bloodshed as Macbeth pursues the Scottish crown."
+          },
+          {
+            title: "King Lear",
+            page: "King Lear",
+            quotePage: "King Lear",
+            type: "Play",
+            creator: "William Shakespeare",
+            year: 1608,
+            fallbackQuotes: [
+              "Nothing will come of nothing.",
+              "How sharper than a serpent's tooth it is to have a thankless child.",
+              "Who is it that can tell me who I am?"
+            ],
+            offlineSummary: "Shakespeare's tragedy explores age, power, filial betrayal, and the collapse of order."
+          }
+        ]
+      },
+      {
+        label: "Whodunit shelf",
+        theme: "same author",
+        difficulty: 2,
+        options: [
+          {
+            title: "Murder on the Orient Express",
+            page: "Murder on the Orient Express",
+            quotePage: "Murder on the Orient Express",
+            type: "Book",
+            creator: "Agatha Christie",
+            year: 1934,
+            fallbackQuotes: [
+              "The impossible could not have happened, therefore the impossible must be possible in spite of appearances.",
+              "One must always proceed with method.",
+              "A confession is always of use."
+            ],
+            offlineSummary: "Christie's Poirot novel traps a murder investigation inside a snowbound luxury train."
+          },
+          {
+            title: "And Then There Were None",
+            page: "And Then There Were None",
+            quotePage: "And Then There Were None",
+            type: "Book",
+            creator: "Agatha Christie",
+            year: 1939,
+            fallbackQuotes: [
+              "In the midst of life, we are in death.",
+              "The whole thing is utterly impossible and absolutely fantastic.",
+              "People don't realize what a capacity for murder they have in them."
+            ],
+            offlineSummary: "Christie's island mystery isolates ten guests with a nursery rhyme and a killer."
+          },
+          {
+            title: "The Murder of Roger Ackroyd",
+            page: "The Murder of Roger Ackroyd",
+            quotePage: "The Murder of Roger Ackroyd",
+            type: "Book",
+            creator: "Agatha Christie",
+            year: 1926,
+            fallbackQuotes: [
+              "Women are adept at keeping their own secrets.",
+              "The truth, however ugly in itself, is always curious and beautiful to seekers after it.",
+              "Instinct is a marvelous thing."
+            ],
+            offlineSummary: "Christie's landmark Poirot mystery is celebrated for its narration and its famous final turn."
+          }
+        ]
+      },
+      {
+        label: "Sci-fi cinema, late 90s",
+        theme: "same era",
+        difficulty: 2,
+        options: [
+          {
+            title: "The Matrix",
+            page: "The Matrix",
+            quotePage: "The Matrix",
+            type: "Movie",
+            creator: "The Wachowskis",
+            year: 1999,
+            fallbackQuotes: [
+              "There is no spoon.",
+              "Welcome to the real world.",
+              "Unfortunately, no one can be told what the Matrix is."
+            ],
+            offlineSummary: "The Wachowskis' film blends cyberpunk, action, and philosophy as Neo awakens to a simulated world."
+          },
+          {
+            title: "The Sixth Sense",
+            page: "The Sixth Sense",
+            quotePage: "The Sixth Sense",
+            type: "Movie",
+            creator: "M. Night Shyamalan",
+            year: 1999,
+            fallbackQuotes: [
+              "I see dead people.",
+              "They only see what they want to see.",
+              "Do I make her proud?"
+            ],
+            offlineSummary: "Shyamalan's supernatural thriller centers on a child haunted by ghosts and a psychologist trying to help him."
+          },
+          {
+            title: "Fight Club",
+            page: "Fight Club",
+            quotePage: "Fight Club",
+            type: "Movie",
+            creator: "David Fincher",
+            year: 1999,
+            fallbackQuotes: [
+              "The first rule of Fight Club is: you do not talk about Fight Club.",
+              "It's only after we've lost everything that we're free to do anything.",
+              "This is your life, and it's ending one minute at a time."
+            ],
+            offlineSummary: "Fincher's adaptation turns alienation, masculinity, and consumer culture into a spiraling split-self narrative."
+          }
+        ]
+      },
+      {
+        label: "Crime films of the 1970s",
+        theme: "same era",
+        difficulty: 3,
+        options: [
+          {
+            title: "The Godfather",
+            page: "The Godfather",
+            quotePage: "The Godfather",
+            type: "Movie",
+            creator: "Francis Ford Coppola",
+            year: 1972,
+            fallbackQuotes: [
+              "I'm gonna make him an offer he can't refuse.",
+              "A man who doesn't spend time with his family can never be a real man.",
+              "Leave the gun. Take the cannoli."
+            ],
+            offlineSummary: "Coppola's adaptation follows the Corleone family as organized crime becomes a dynasty and a moral trap."
+          },
+          {
+            title: "Taxi Driver",
+            page: "Taxi Driver",
+            quotePage: "Taxi Driver",
+            type: "Movie",
+            creator: "Martin Scorsese",
+            year: 1976,
+            fallbackQuotes: [
+              "You talkin' to me?",
+              "Loneliness has followed me my whole life.",
+              "Someday a real rain will come and wash all this scum off the streets."
+            ],
+            offlineSummary: "Scorsese's film studies isolation and vigilantism through the increasingly volatile Travis Bickle."
+          },
+          {
+            title: "Apocalypse Now",
+            page: "Apocalypse Now",
+            quotePage: "Apocalypse Now",
+            type: "Movie",
+            creator: "Francis Ford Coppola",
+            year: 1979,
+            fallbackQuotes: [
+              "I love the smell of napalm in the morning.",
+              "The horror. The horror.",
+              "Never get out of the boat."
+            ],
+            offlineSummary: "Coppola's Vietnam War epic adapts Conrad into a hallucinatory descent through violence and command."
+          }
+        ]
+      },
+      {
+        label: "Classic suspense",
+        theme: "same director",
+        difficulty: 3,
+        options: [
+          {
+            title: "Psycho",
+            page: "Psycho (1960 film)",
+            quotePage: "Psycho",
+            type: "Movie",
+            creator: "Alfred Hitchcock",
+            year: 1960,
+            fallbackQuotes: [
+              "We all go a little mad sometimes.",
+              "A boy's best friend is his mother.",
+              "I think that we're all in our private traps."
+            ],
+            offlineSummary: "Hitchcock's thriller turns a roadside motel into one of cinema's defining studies of fear and fractured identity."
+          },
+          {
+            title: "Rear Window",
+            page: "Rear Window",
+            quotePage: "Rear Window",
+            type: "Movie",
+            creator: "Alfred Hitchcock",
+            year: 1954,
+            fallbackQuotes: [
+              "We've become a race of Peeping Toms.",
+              "That's no ordinary look. It's the kind of look a man gives when he realizes something's happened.",
+              "Tell me everything you saw and what you think it means."
+            ],
+            offlineSummary: "Hitchcock's film traps a photographer in his apartment as curiosity becomes suspicion and danger."
+          },
+          {
+            title: "Vertigo",
+            page: "Vertigo (film)",
+            quotePage: "Vertigo",
+            type: "Movie",
+            creator: "Alfred Hitchcock",
+            year: 1958,
+            fallbackQuotes: [
+              "Only one is a wanderer; two together are always going somewhere.",
+              "There you were, hanging in the air, and I had no hand to hold on to.",
+              "I need you to be Madeleine for a while."
+            ],
+            offlineSummary: "Hitchcock's dreamlike thriller follows obsession, reinvention, and the instability of desire."
+          }
+        ]
+      },
+      {
+        label: "Holmes cases",
+        theme: "same detective",
+        difficulty: 2,
+        options: [
+          {
+            title: "A Study in Scarlet",
+            page: "A Study in Scarlet",
+            quotePage: "A Study in Scarlet",
+            type: "Book",
+            creator: "Arthur Conan Doyle",
+            year: 1887,
+            fallbackQuotes: [
+              "There is the scarlet thread of murder running through the colourless skein of life.",
+              "You have been in Afghanistan, I perceive.",
+              "The little things are infinitely the most important."
+            ],
+            offlineSummary: "The first Sherlock Holmes novel introduces both Holmes and Watson through a baffling murder."
+          },
+          {
+            title: "The Sign of the Four",
+            page: "The Sign of the Four",
+            quotePage: "The Sign of the Four",
+            type: "Book",
+            creator: "Arthur Conan Doyle",
+            year: 1890,
+            fallbackQuotes: [
+              "When you have eliminated the impossible, whatever remains, however improbable, must be the truth.",
+              "My mind rebels at stagnation.",
+              "Detection is, or ought to be, an exact science."
+            ],
+            offlineSummary: "Holmes and Watson pursue a treasure mystery that mixes colonial history, coded clues, and pursuit across London."
+          },
+          {
+            title: "The Hound of the Baskervilles",
+            page: "The Hound of the Baskervilles",
+            quotePage: "The Hound of the Baskervilles",
+            type: "Book",
+            creator: "Arthur Conan Doyle",
+            year: 1902,
+            fallbackQuotes: [
+              "The world is full of obvious things which nobody by any chance ever observes.",
+              "I have in my pocket a manuscript.",
+              "It is not what we know but what we can prove."
+            ],
+            offlineSummary: "Conan Doyle sends Holmes and Watson into moorland legend, inheritance anxiety, and one of their most famous cases."
+          }
+        ]
+      },
+      {
+        label: "Oscar Wilde stage and page",
+        theme: "same author",
+        difficulty: 2,
+        options: [
+          {
+            title: "The Picture of Dorian Gray",
+            page: "The Picture of Dorian Gray",
+            quotePage: "The Picture of Dorian Gray",
+            type: "Book",
+            creator: "Oscar Wilde",
+            year: 1890,
+            fallbackQuotes: [
+              "The only way to get rid of a temptation is to yield to it.",
+              "To define is to limit.",
+              "Nowadays people know the price of everything and the value of nothing."
+            ],
+            offlineSummary: "Wilde's novel fuses aestheticism, vanity, and moral decay through a portrait that records corruption."
+          },
+          {
+            title: "The Importance of Being Earnest",
+            page: "The Importance of Being Earnest",
+            quotePage: "The Importance of Being Earnest",
+            type: "Play",
+            creator: "Oscar Wilde",
+            year: 1895,
+            fallbackQuotes: [
+              "The truth is rarely pure and never simple.",
+              "In matters of grave importance, style, not sincerity, is the vital thing.",
+              "To lose one parent may be regarded as a misfortune."
+            ],
+            offlineSummary: "Wilde's sparkling comedy of manners turns identity, courtship, and social performance into epigrammatic farce."
+          },
+          {
+            title: "An Ideal Husband",
+            page: "An Ideal Husband",
+            quotePage: "An Ideal Husband",
+            type: "Play",
+            creator: "Oscar Wilde",
+            year: 1895,
+            fallbackQuotes: [
+              "Morality is simply the attitude we adopt towards people whom we personally dislike.",
+              "Sooner or later we have all to pay for what we do.",
+              "To love oneself is the beginning of a lifelong romance."
+            ],
+            offlineSummary: "Wilde's political comedy tests marriage, reputation, and blackmail under the pressure of public virtue."
+          }
+        ]
+      },
+      {
+        label: "Fantasy school years",
+        theme: "same series",
+        difficulty: 1,
+        options: [
+          {
+            title: "Harry Potter and the Philosopher's Stone",
+            page: "Harry Potter and the Philosopher's Stone",
+            quotePage: "Harry Potter and the Philosopher's Stone",
+            type: "Book",
+            creator: "J. K. Rowling",
+            year: 1997,
+            fallbackQuotes: [
+              "It does not do to dwell on dreams and forget to live.",
+              "There is no good and evil, there is only power.",
+              "To the well-organized mind, death is but the next great adventure."
+            ],
+            offlineSummary: "The first Harry Potter novel introduces Hogwarts, friendship, and the return of danger around the Philosopher's Stone."
+          },
+          {
+            title: "Harry Potter and the Chamber of Secrets",
+            page: "Harry Potter and the Chamber of Secrets",
+            quotePage: "Harry Potter and the Chamber of Secrets",
+            type: "Book",
+            creator: "J. K. Rowling",
+            year: 1998,
+            fallbackQuotes: [
+              "It is our choices that show what we truly are, far more than our abilities.",
+              "Hearing voices no one else can hear isn't a good sign.",
+              "The consequences of our actions are always so complicated."
+            ],
+            offlineSummary: "The second novel returns Harry to Hogwarts for a mystery of attacks, hidden history, and a reopened chamber."
+          },
+          {
+            title: "Harry Potter and the Prisoner of Azkaban",
+            page: "Harry Potter and the Prisoner of Azkaban",
+            quotePage: "Harry Potter and the Prisoner of Azkaban",
+            type: "Book",
+            creator: "J. K. Rowling",
+            year: 1999,
+            fallbackQuotes: [
+              "Happiness can be found even in the darkest of times, if one only remembers to turn on the light.",
+              "I solemnly swear that I am up to no good.",
+              "You think the dead we loved ever truly leave us?"
+            ],
+            offlineSummary: "The third novel deepens the series with time-turning, escaped prisoners, and a warmer but darker emotional palette."
+          }
+        ]
+      }
+    ];
+
+    const state = {
+      roundNumber: 0,
+      score: 0,
+      streak: 0,
+      bestStreak: 0,
+      currentCluster: null,
+      correctIndex: 0,
+      answered: false,
+      hintUsed: false,
+      loading: false,
+      lastClusterLabel: "",
+      seenQuotes: new Set()
+    };
+
+    const scoreEl = document.getElementById("score");
+    const streakEl = document.getElementById("streak");
+    const roundEl = document.getElementById("round");
+    const clusterNameEl = document.getElementById("clusterName");
+    const clusterTypeEl = document.getElementById("clusterType");
+    const clusterTagEl = document.getElementById("clusterTag");
+    const quoteTextEl = document.getElementById("quoteText");
+    const hintBoxEl = document.getElementById("hintBox");
+    const choicesEl = document.getElementById("choices");
+    const feedbackEl = document.getElementById("feedback");
+    const resultCardEl = document.getElementById("resultCard");
+    const resultTitleEl = document.getElementById("resultTitle");
+    const resultCopyEl = document.getElementById("resultCopy");
+    const summaryGridEl = document.getElementById("summaryGrid");
+    const hintButtonEl = document.getElementById("hintButton");
+    const nextButtonEl = document.getElementById("nextButton");
+    const restartButtonEl = document.getElementById("restartButton");
+    const difficultyEl = document.getElementById("difficulty");
+
+    function sample(list) {
+      return list[Math.floor(Math.random() * list.length)];
+    }
+
+    function resetDeck() {
+      state.roundNumber = 0;
+      state.score = 0;
+      state.streak = 0;
+      state.bestStreak = 0;
+      state.lastClusterLabel = "";
+      state.seenQuotes = new Set();
+      loadRound();
+    }
+
+    function renderStats() {
+      scoreEl.textContent = state.score;
+      streakEl.textContent = state.streak;
+      roundEl.textContent = String(state.roundNumber);
+    }
+
+    function updateDifficulty(level) {
+      [...difficultyEl.children].forEach((dot, index) => {
+        dot.classList.toggle("active", index < level);
+      });
+    }
+
+    function renderChoices() {
+      choicesEl.innerHTML = "";
+      state.currentCluster.options.forEach((option, index) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "choice";
+        button.innerHTML = `
+          <div class="mini-label">${option.type}</div>
+          <div class="choice-title">${option.title}</div>
+          <div class="choice-meta">${option.creator}<br>${option.year}</div>
+        `;
+        button.addEventListener("click", () => handleGuess(index));
+        choicesEl.appendChild(button);
+      });
+    }
+
+    function pickCluster() {
+      const pool = CLUSTERS.filter((cluster) => cluster.label !== state.lastClusterLabel);
+      return sample(pool.length ? pool : CLUSTERS);
+    }
+
+    function normalizeQuote(raw) {
+      return raw
+        .replace(/\[[^\]]*]/g, "")
+        .replace(/\s+/g, " ")
+        .replace(/^["“”'`]+|["“”'`]+$/g, "")
+        .trim();
+    }
+
+    function isGoodQuote(text, optionTitle) {
+      if (!text) return false;
+      if (text.length < 28 || text.length > 240) return false;
+      if ((text.match(/[.:;!?]/g) || []).length > 5) return false;
+      if (/[{}[\]|]/.test(text)) return false;
+      if (/^\d+$/.test(text)) return false;
+      if (text.toLowerCase().includes("wikiquote")) return false;
+      if (text.toLowerCase().includes(optionTitle.toLowerCase())) return false;
+      return true;
+    }
+
+    async function fetchWikiquoteCandidates(option) {
+      const url = `https://en.wikiquote.org/w/api.php?action=parse&page=${encodeURIComponent(option.quotePage || option.title)}&prop=text&format=json&formatversion=2&origin=*`;
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Wikiquote request failed for ${option.title}`);
+      }
+
+      const data = await response.json();
+      const html = data.parse?.text;
+      if (!html) {
+        throw new Error(`No Wikiquote HTML for ${option.title}`);
+      }
+
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, "text/html");
+      const items = [...doc.querySelectorAll("li")];
+      const quotes = items
+        .filter((item) => !item.querySelector("ul, ol"))
+        .map((item) => normalizeQuote(item.textContent || ""))
+        .filter((quote) => isGoodQuote(quote, option.title));
+
+      return [...new Set(quotes)];
+    }
+
+    async function getQuoteForOption(option) {
+      try {
+        const candidates = await fetchWikiquoteCandidates(option);
+        const unseen = candidates.filter((quote) => !state.seenQuotes.has(`${option.title}::${quote}`));
+        const chosen = sample(unseen.length ? unseen : candidates);
+        if (chosen) {
+          state.seenQuotes.add(`${option.title}::${chosen}`);
+          return chosen;
+        }
+      } catch (error) {
+        // Fallback to local backup quotes below.
+      }
+
+      const fallbackPool = option.fallbackQuotes.filter((quote) => !state.seenQuotes.has(`${option.title}::${quote}`));
+      const chosenFallback = sample(fallbackPool.length ? fallbackPool : option.fallbackQuotes);
+      state.seenQuotes.add(`${option.title}::${chosenFallback}`);
+      return chosenFallback;
+    }
+
+    function setLoadingState(isLoading) {
+      state.loading = isLoading;
+      hintButtonEl.disabled = isLoading || state.answered || state.hintUsed;
+      restartButtonEl.disabled = isLoading;
+      [...choicesEl.querySelectorAll(".choice")].forEach((button) => {
+        button.disabled = isLoading || state.answered;
+      });
+    }
+
+    async function loadRound() {
+      state.roundNumber += 1;
+      state.currentCluster = pickCluster();
+      state.lastClusterLabel = state.currentCluster.label;
+      state.correctIndex = Math.floor(Math.random() * state.currentCluster.options.length);
+      state.answered = false;
+      state.hintUsed = false;
+
+      clusterNameEl.textContent = state.currentCluster.label;
+      clusterTypeEl.textContent = `Matchup by ${state.currentCluster.theme}`;
+      clusterTagEl.textContent = state.currentCluster.label;
+      quoteTextEl.textContent = "Loading a fresh quote…";
+      hintBoxEl.textContent = "";
+      feedbackEl.textContent = "A new quote is being pulled in. Then pick the source work, not the author.";
+      feedbackEl.className = "feedback";
+      resultCardEl.classList.remove("visible");
+      resultTitleEl.textContent = "Round notes";
+      resultCopyEl.textContent = "";
+      summaryGridEl.innerHTML = "";
+      nextButtonEl.classList.add("hidden");
+      renderStats();
+      updateDifficulty(state.currentCluster.difficulty);
+      renderChoices();
+      setLoadingState(true);
+
+      const answer = state.currentCluster.options[state.correctIndex];
+      const quote = await getQuoteForOption(answer);
+      quoteTextEl.textContent = quote;
+      feedbackEl.textContent = "Pick the source work, not the author.";
+      feedbackEl.className = "feedback";
+      setLoadingState(false);
+    }
+
+    function buildHint(option) {
+      return `Hint: ${option.type.toLowerCase()} by ${option.creator}, published or released in ${option.year}.`;
+    }
+
+    function revealHint() {
+      if (state.loading || state.answered || state.hintUsed) {
+        return;
+      }
+      state.hintUsed = true;
+      hintBoxEl.textContent = buildHint(state.currentCluster.options[state.correctIndex]);
+      feedbackEl.textContent = "Hint revealed. A correct answer now earns 1 point.";
+      feedbackEl.className = "feedback";
+      hintButtonEl.disabled = true;
+    }
+
+    function handleGuess(index) {
+      if (state.loading || state.answered) {
+        return;
+      }
+
+      state.answered = true;
+      hintButtonEl.disabled = true;
+      nextButtonEl.classList.remove("hidden");
+
+      const choiceButtons = [...choicesEl.querySelectorAll(".choice")];
+      const correctOption = state.currentCluster.options[state.correctIndex];
+      const guessedCorrectly = index === state.correctIndex;
+
+      choiceButtons.forEach((button, buttonIndex) => {
+        button.disabled = true;
+        button.classList.add("reveal");
+        if (buttonIndex === state.correctIndex) {
+          button.classList.add("correct");
+        } else if (buttonIndex === index) {
+          button.classList.add("incorrect");
+        }
+      });
+
+      if (guessedCorrectly) {
+        const roundPoints = state.hintUsed ? 1 : 3;
+        state.score += roundPoints;
+        state.streak += 1;
+        state.bestStreak = Math.max(state.bestStreak, state.streak);
+        feedbackEl.textContent = `Correct. ${correctOption.title} takes this one. +${roundPoints} point${roundPoints > 1 ? "s" : ""}.`;
+        feedbackEl.className = "feedback good";
+      } else {
+        state.streak = 0;
+        feedbackEl.textContent = `Not this time. That quote is from ${correctOption.title}.`;
+        feedbackEl.className = "feedback bad";
+      }
+
+      renderStats();
+      renderRoundReference();
+    }
+
+    async function fetchWikiSummary(title) {
+      const url = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`;
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        throw new Error(`Wikipedia request failed for ${title}`);
+      }
+
+      const data = await response.json();
+      return {
+        summary: data.extract || "",
+        url: data.content_urls?.desktop?.page || `https://en.wikipedia.org/wiki/${encodeURIComponent(title.replace(/ /g, "_"))}`
+      };
+    }
+
+    async function renderRoundReference() {
+      const answer = state.currentCluster.options[state.correctIndex];
+      resultCardEl.classList.add("visible");
+      resultTitleEl.textContent = answer.title;
+      resultCopyEl.textContent = `The live reference cards below compare all three nearby candidates from the ${state.currentCluster.label.toLowerCase()} cluster.`;
+      summaryGridEl.innerHTML = state.currentCluster.options.map(() => `
+        <article class="summary-card">
+          <div class="mini-label">Loading</div>
+          <h3>Fetching note…</h3>
+          <p>Trying Wikipedia first.</p>
+        </article>
+      `).join("");
+
+      const cards = [...summaryGridEl.querySelectorAll(".summary-card")];
+
+      await Promise.all(state.currentCluster.options.map(async (option, index) => {
+        const card = cards[index];
+        const isCorrect = index === state.correctIndex;
+
+        if (isCorrect) {
+          card.classList.add("correct");
+        }
+
+        try {
+          const wiki = await fetchWikiSummary(option.page);
+          card.innerHTML = `
+            <div class="mini-label">${option.type} · ${option.creator}</div>
+            <h3>${option.title}</h3>
+            <p>${wiki.summary || option.offlineSummary}</p>
+            <a class="summary-link" href="${wiki.url}" target="_blank" rel="noreferrer">Open Wikipedia</a>
+          `;
+        } catch (error) {
+          card.innerHTML = `
+            <div class="mini-label">${option.type} · ${option.creator}</div>
+            <h3>${option.title}</h3>
+            <p>${option.offlineSummary}</p>
+            <a class="summary-link" href="https://en.wikipedia.org/wiki/${encodeURIComponent(option.page.replace(/ /g, "_"))}" target="_blank" rel="noreferrer">Open Wikipedia</a>
+          `;
+        }
+      }));
+    }
+
+    hintButtonEl.addEventListener("click", revealHint);
+    nextButtonEl.addEventListener("click", loadRound);
+    restartButtonEl.addEventListener("click", resetDeck);
+
+    resetDeck();
+  </script>
+</body>
+</html>
