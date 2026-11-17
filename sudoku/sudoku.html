@@ -11,12 +11,13 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 110vh;
+            min-height: 100vh;
             background-color: #000;
             margin: 0;
             font-family: 'Press Start 2P', cursive;
             color: #fff;
             padding: 10px;
+            box-sizing: border-box;
         }
         #sudoku-container {
             display: flex;
@@ -29,8 +30,10 @@
         }
         #sudoku-grid {
             display: grid;
-            grid-template-columns: repeat(9, 50px);
-            grid-template-rows: repeat(9, 50px);
+            grid-template-columns: repeat(9, 1fr);
+            grid-template-rows: repeat(9, 1fr);
+            width: min(450px, 92vw);
+            aspect-ratio: 1;
             position: relative;
             border: 6px solid black;
         }
@@ -53,6 +56,10 @@
         .cell.selected {
             transform: scale(1.2);
             border: 2px solid red;
+        }
+        .cell.given {
+            background-color: #e8e8e8;
+            font-weight: bold;
         }
         .color-palette {
             display: flex;
@@ -136,8 +143,7 @@
         }
         @media (max-width: 600px) {
             #sudoku-grid {
-                grid-template-columns: repeat(9, 40px);
-                grid-template-rows: repeat(9, 40px);
+                border-width: 4px;
             }
             .cell {
                 font-size: 14px;
@@ -162,8 +168,8 @@
     <div id="sudoku-container">
         <div id="sudoku-grid"></div>
         <div id="color-palette" class="color-palette"></div>
-        <div id="error-message" class="error"></div>
-        <div id="victory-message" class="victory"></div>
+        <div id="error-message" class="error" role="alert" aria-live="assertive"></div>
+        <div id="victory-message" class="victory" role="status" aria-live="polite"></div>
     </div>
     <div class="options">
         <label>
@@ -171,7 +177,8 @@
             A little help
         </label>
         <label>
-            Autocomplete : <input type="range" id="completion-slider" min="10" max="80" value="10">
+            <span id="completion-label">Clues: 40</span>
+            <input type="range" id="completion-slider" min="20" max="80" value="40">
         </label>
         <label>
             <input type="checkbox" id="daltonian-mode">
@@ -181,8 +188,7 @@
             <input type="checkbox" id="number-mode">
             Number mode
         </label>
-        <!-- <button id="undo-button" style="margin-top: 10px; padding: 5px 10px; font-family: 'Press Start 2P', cursive; font-size: 10px; cursor: pointer;">UNDO</button> -->
-    <button id="undo-button" style="
+        <button id="undo-button" style="
         margin-top: 10px;
         padding: 8px 15px;
         font-family: 'Press Start 2P', cursive;
@@ -200,8 +206,13 @@
     ">
         UNDO
     </button>
-
-        <div class="note">* Refresh the page to apply the autocomplete level</div>
+        <button id="new-game-button" style="
+            margin-top: 12px;
+            padding: 8px 15px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 12px;
+            cursor: pointer;
+        ">NEW PUZZLE</button>
     </div>
     <footer>
         <p>Inspired by the code of <a href="https://github.com/David-Elkabas/Sudoku/blob/master/sudokuGenerator.py" target="_blank">David Elkabas</a></p>
@@ -215,17 +226,25 @@
         let currentColors = defaultColors;
         let selectedCell = null;
         let grid = Array.from({ length: 9 }, () => Array(9).fill(0));
+        let givenCells = new Set();
+        let actionStack = [];
 
 
         
         function createGrid() {
             const gridElement = document.getElementById('sudoku-grid');
+            gridElement.setAttribute('role', 'grid');
+            gridElement.setAttribute('aria-label', 'Sudoku board');
             for (let row = 0; row < 9; row++) {
                 for (let col = 0; col < 9; col++) {
                     const cell = document.createElement('div');
                     cell.classList.add('cell');
                     cell.dataset.index = row * 9 + col;
+                    cell.setAttribute('role', 'gridcell');
+                    cell.setAttribute('tabindex', row === 0 && col === 0 ? '0' : '-1');
+                    cell.setAttribute('aria-label', `Row ${row + 1}, column ${col + 1}, empty`);
                     cell.addEventListener('click', () => selectCell(row * 9 + col));
+                    cell.addEventListener('keydown', (event) => handleGridKeydown(event, row, col));
                     gridElement.appendChild(cell);
                 }
             }
@@ -249,6 +268,15 @@
                     } else {
                         option.style.backgroundColor = currentColors[i];
                     }
+                    option.setAttribute('role', 'button');
+                    option.setAttribute('tabindex', '0');
+                    option.setAttribute('aria-label', numberMode ? `Place ${i + 1}` : `Place color ${i + 1}`);
+                    option.addEventListener('keydown', (event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            placeColor(i);
+                        }
+                    });
                     option.addEventListener('click', () => placeColor(i));
                     palette.appendChild(option);
                 }
@@ -256,39 +284,33 @@
 
 
         function selectCell(index) {
+            if (givenCells.has(index)) {
+                showErrorMessage("This is a given cell");
+                return;
+            }
             const cells = document.querySelectorAll('.cell');
             cells.forEach(cell => {
                 cell.classList.remove('selected');
                 cell.style.borderColor = 'black';
+                cell.setAttribute('tabindex', '-1');
             });
             selectedCell = index;
             const selected = document.querySelector(`.cell[data-index='${index}']`);
             selected.classList.add('selected');
+            selected.setAttribute('tabindex', '0');
+            selected.focus();
             updateColorOptions();
         }
 
-        function placeColor(colorIndex) {
-            if (selectedCell !== null) {
-                const row = Math.floor(selectedCell / 9);
-                const col = selectedCell % 9;
-                if (validCheck(grid, colorIndex + 1, [row, col])) {
-                    grid[row][col] = colorIndex + 1;
-                    updateGridDisplay();
-                    checkVictory();
-                    checkCompletedLines();
-                    selectedCell = null;
-                } else {
-                    showErrorMessage("🚨 Error: Sudoku rules are not respected 🚨");
-                }
-            }
-        }
-
-                function updateGridDisplay() {
+        function updateGridDisplay() {
             const cells = document.querySelectorAll('.cell');
             cells.forEach((cell, index) => {
                 const row = Math.floor(index / 9);
                 const col = index % 9;
                 const value = grid[row][col];
+                cell.classList.toggle('given', givenCells.has(index));
+                cell.setAttribute('aria-readonly', givenCells.has(index) ? 'true' : 'false');
+                cell.setAttribute('aria-label', `Row ${row + 1}, column ${col + 1}, ${value || 'empty'}`);
                 if (value) {
                     if (numberMode) {
                         cell.textContent = value;
@@ -307,16 +329,52 @@
             });
         }
 
+        function handleGridKeydown(event, row, col) {
+            const offsets = {
+                ArrowUp: [-1, 0],
+                ArrowDown: [1, 0],
+                ArrowLeft: [0, -1],
+                ArrowRight: [0, 1]
+            };
+            if (offsets[event.key]) {
+                event.preventDefault();
+                const [rowOffset, colOffset] = offsets[event.key];
+                const nextRow = (row + rowOffset + 9) % 9;
+                const nextCol = (col + colOffset + 9) % 9;
+                const nextCell = document.querySelector(`.cell[data-index='${nextRow * 9 + nextCol}']`);
+                nextCell.focus();
+                return;
+            }
+
+            if (/^[1-9]$/.test(event.key)) {
+                event.preventDefault();
+                selectCell(row * 9 + col);
+                placeColor(Number(event.key) - 1);
+            } else if (event.key === 'Backspace' || event.key === 'Delete' || event.key === '0') {
+                event.preventDefault();
+                const index = row * 9 + col;
+                if (!givenCells.has(index) && grid[row][col] !== 0) {
+                    actionStack.push({ row, col, previousValue: grid[row][col], newValue: 0 });
+                    grid[row][col] = 0;
+                    updateGridDisplay();
+                    checkVictory();
+                }
+            }
+        }
 
         function checkVictory() {
-            if (grid.every(row => row.every(cell => cell !== 0))) {
+            const complete = grid.every(row => row.every(cell => cell !== 0));
+            if (complete) {
                 document.getElementById('victory-message').textContent = "Bravo ! 🎉";
+            } else {
+                document.getElementById('victory-message').textContent = "";
             }
         }
 
         function checkCompletedLines() {
             const completedLines = [];
             const completedColumns = [];
+            document.querySelectorAll('.completed-line, .completed-column').forEach(element => element.remove());
 
             // Check rows
             for (let row = 0; row < 9; row++) {
@@ -431,10 +489,60 @@
             }
         }
 
-        function sudokuGenerate(board, level) {
+        function countSolutions(board, limit = 2) {
+            let count = 0;
+            const find = findEmpty(board);
+            if (!find) return 1;
+            const [row, col] = find;
+            for (let number = 1; number <= 9; number++) {
+                if (validCheck(board, number, [row, col])) {
+                    board[row][col] = number;
+                    count += countSolutions(board, limit);
+                    board[row][col] = 0;
+                    if (count >= limit) break;
+                }
+            }
+            return count;
+        }
+
+        function deleteCellsWithUniqueSolution(board, targetClues) {
+            const positions = Array.from({ length: 81 }, (_, index) => index);
+            for (let i = positions.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [positions[i], positions[j]] = [positions[j], positions[i]];
+            }
+
+            let clues = 81;
+            for (const index of positions) {
+                if (clues <= targetClues) break;
+                const row = Math.floor(index / 9);
+                const col = index % 9;
+                const saved = board[row][col];
+                board[row][col] = 0;
+                if (countSolutions(board.map(rowValues => [...rowValues])) === 1) {
+                    clues--;
+                } else {
+                    board[row][col] = saved;
+                }
+            }
+        }
+
+        function sudokuGenerate(board) {
             generateRandomBoard(board);
             const completionLevel = document.getElementById('completion-slider').value;
-            deleteCells(board, 81 - completionLevel);
+            deleteCellsWithUniqueSolution(board, Number(completionLevel));
+            givenCells = new Set();
+            for (let row = 0; row < 9; row++) {
+                for (let col = 0; col < 9; col++) {
+                    if (board[row][col] !== 0) {
+                        givenCells.add(row * 9 + col);
+                    }
+                }
+            }
+            actionStack = [];
+            selectedCell = null;
+            document.getElementById('victory-message').textContent = '';
+            document.querySelectorAll('.completed-line, .completed-column').forEach(element => element.remove());
         }
 
         function updateColorOptions() {
@@ -459,6 +567,15 @@
                         } else {
                             option.style.backgroundColor = currentColors[i];
                         }
+                        option.setAttribute('role', 'button');
+                        option.setAttribute('tabindex', '0');
+                        option.setAttribute('aria-label', numberMode ? `Place ${i + 1}` : `Place color ${i + 1}`);
+                        option.addEventListener('keydown', (event) => {
+                            if (event.key === 'Enter' || event.key === ' ') {
+                                event.preventDefault();
+                                placeColor(i);
+                            }
+                        });
                         option.addEventListener('click', () => placeColor(i));
                         palette.appendChild(option);
                     }
@@ -468,12 +585,14 @@
             }
         }
 
-        let actionStack = []; // Stack to store user actions
-
         function placeColor(colorIndex) {
             if (selectedCell !== null) {
                 const row = Math.floor(selectedCell / 9);
                 const col = selectedCell % 9;
+                if (givenCells.has(selectedCell)) {
+                    showErrorMessage("This is a given cell");
+                    return;
+                }
                 const previousValue = grid[row][col];
                 if (validCheck(grid, colorIndex + 1, [row, col])) {
                     // Push the action to the stack
@@ -528,9 +647,19 @@
 
         document.getElementById('undo-button').addEventListener('click', undoLastAction);
 
+        document.getElementById('new-game-button').addEventListener('click', () => {
+            grid = Array.from({ length: 9 }, () => Array(9).fill(0));
+            sudokuGenerate(grid);
+            updateGridDisplay();
+        });
+
+        document.getElementById('completion-slider').addEventListener('input', (event) => {
+            document.getElementById('completion-label').textContent = `Clues: ${event.target.value}`;
+        });
+
         createGrid();
         createColorPalette();
-        sudokuGenerate(grid, 1); // Génère une grille remplie à 98%
+        sudokuGenerate(grid);
         updateGridDisplay();
 
         
