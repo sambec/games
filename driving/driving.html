@@ -398,7 +398,7 @@ let score, coins, lives, distance;
 let baseSpeed, speedMult, nightMode;
 let nitro, nitroCooldown;
 let playerX, playerLane;
-let obstacles = [], rewards = [], milestones = [], particles = [], roadOffset = 0, curbOffset = 0;
+let obstacles = [], rewards = [], hearts = [], milestones = [], particles = [], roadOffset = 0, curbOffset = 0;
 let nextMilestone;
 let animId, lastTs;
 let bestScore = +localStorage.getItem('drive_best') || 0;
@@ -492,7 +492,7 @@ function initGame() {
   nitro = 1; nitroCooldown = 0;
   playerLane = 1;
   playerX = laneCenter(1);
-  obstacles = []; rewards = []; milestones = []; nextMilestone = 500; particles = [];
+  obstacles = []; rewards = []; hearts = []; milestones = []; nextMilestone = 500; particles = [];
   roadOffset = 0; curbOffset = 0;
   invincibleUntil = 0;
   updateUI();
@@ -527,6 +527,8 @@ function loop(ts) {
 
   if (Math.random() < 0.022 * dt) spawnObstacle(speed);
   if (Math.random() < 0.014 * dt) spawnCoin();
+  if (lives < 3 && hearts.length === 0 && Math.random() < 0.003 * dt) spawnHeart();
+  if (lives >= 3) hearts = [];
 
   speedMult = 1 + Math.floor(distance / 200) * 0.12;
   score += Math.round(speed * dt * 0.5);
@@ -556,6 +558,8 @@ function loop(ts) {
 
   rewards.forEach(r => { r.y += speed * dt; r.spin += 0.1 * dt; });
   rewards = rewards.filter(r => r.y < H + 60);
+  hearts.forEach(heart => { heart.y += speed * dt; });
+  hearts = hearts.filter(heart => heart.y < H + 40);
 
   particles.forEach(p => {
     p.x += p.vx * dt; p.y += p.vy * dt;
@@ -577,6 +581,14 @@ function loop(ts) {
       spawnCoinParticles(r.x, r.y);
       playSound('coin');
       rewards.splice(i, 1);
+    }
+  });
+  hearts.forEach((heart, i) => {
+    if (gameRunning && lives < 3 && collidesSmall(playerX, H-100, heart.x, heart.y)) {
+      lives++;
+      spawnHeartParticles(heart.x, heart.y);
+      playSound('life');
+      hearts.splice(i, 1);
     }
   });
 
@@ -642,6 +654,11 @@ function spawnCoin() {
   rewards.push({ x: laneCenter(lane), y: -20, spin: 0 });
 }
 
+function spawnHeart() {
+  const lane = Math.floor(Math.random()*LANES);
+  hearts.push({ x: laneCenter(lane), y: -24 });
+}
+
 function spawnCrashParticles(x, y) {
   for (let i=0;i<18;i++) {
     const a = (Math.PI*2/18)*i;
@@ -657,6 +674,14 @@ function spawnCoinParticles(x, y) {
     const a = (Math.PI*2/8)*i;
     particles.push({ x, y, vx: Math.cos(a)*2, vy:Math.sin(a)*2-1,
       life:.8, color:'#ffcc00', r:3 });
+  }
+}
+
+function spawnHeartParticles(x, y) {
+  for (let i=0;i<8;i++) {
+    const a = (Math.PI*2/8)*i;
+    particles.push({ x, y, vx: Math.cos(a)*2, vy:Math.sin(a)*2-1,
+      life:.8, color:'#ff4d7d', r:3 });
   }
 }
 
@@ -739,6 +764,8 @@ function draw() {
     ctx.restore();
   });
 
+  hearts.forEach(heart => drawPixelHeart(heart.x, heart.y));
+
   obstacles.forEach(o => drawObstacleCar(o.x, o.y, o.color));
 
   particles.forEach(p => {
@@ -750,6 +777,31 @@ function draw() {
   });
 
   drawPlayerCar(playerX, H-100, '#33A8C7', Date.now() < invincibleUntil);
+}
+
+function drawPixelHeart(x, y) {
+  const pixels = [
+    '01110',
+    '11111',
+    '11111',
+    '01110',
+    '00100',
+  ];
+  const size = 5;
+  ctx.save();
+  ctx.shadowBlur = nightMode ? 14 : 6;
+  ctx.shadowColor = '#ff4d7d';
+  ctx.fillStyle = '#ff4d7d';
+  pixels.forEach((row, rowIndex) => {
+    [...row].forEach((pixel, columnIndex) => {
+      if (pixel === '1') {
+        ctx.fillRect(x - 12.5 + columnIndex * size, y - 12.5 + rowIndex * size, size, size);
+      }
+    });
+  });
+  ctx.fillStyle = '#ffb3c6';
+  ctx.fillRect(x - 7.5, y - 7.5, size, size);
+  ctx.restore();
 }
 
 function drawMilestone(milestone) {
@@ -911,6 +963,12 @@ function playSound(type) {
       g.gain.setValueAtTime(.15,a.currentTime);
       g.gain.exponentialRampToValueAtTime(.001,a.currentTime+.2);
       o.start(); o.stop(a.currentTime+.2);
+    } else if(type==='life'){
+      o.type='sine'; o.frequency.setValueAtTime(660,a.currentTime);
+      o.frequency.linearRampToValueAtTime(990,a.currentTime+.16);
+      g.gain.setValueAtTime(.15,a.currentTime);
+      g.gain.exponentialRampToValueAtTime(.001,a.currentTime+.24);
+      o.start(); o.stop(a.currentTime+.24);
     } else if(type==='crash'){
       o.type='sawtooth'; o.frequency.setValueAtTime(220,a.currentTime);
       o.frequency.linearRampToValueAtTime(55,a.currentTime+.3);
@@ -925,7 +983,7 @@ function playSound(type) {
 overlayBest.textContent = bestScore ? 'Best: '+bestScore : '';
 nightMode = false;
 score=0;coins=0;lives=3;distance=0;baseSpeed=4;speedMult=1;
-nitro=1;playerX=laneCenter(1);obstacles=[];rewards=[];particles=[];
+nitro=1;playerX=laneCenter(1);obstacles=[];rewards=[];hearts=[];particles=[];
 roadOffset=0;curbOffset=0;invincibleUntil=0;
 draw();
 updateUI();
