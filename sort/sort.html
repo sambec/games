@@ -1,177 +1,389 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ball Sort Puzzle</title>
+    <title>Ball Sort</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
+        * {
+            box-sizing: border-box;
+        }
+
         body {
+            min-height: 100vh;
+            margin: 0;
+            padding: 70px 16px 30px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
-            background: linear-gradient(135deg, #f0f0f0 25%, #cce7ff 25%, #cce7ff 50%, #f0f0f0 50%, #f0f0f0 75%, #cce7ff 75%, #cce7ff 100%);
-            font-family: 'Arial', sans-serif;
+            background: #000;
+            color: #fff;
+            font-family: 'Press Start 2P', cursive;
+        }
+
+        h1 {
+            margin: 0 0 18px;
+            color: #ff69b4;
+            font-size: clamp(20px, 5vw, 32px);
+            text-shadow: 3px 3px 0 #00f;
+        }
+
+        .game-shell {
+            width: min(680px, 100%);
+            padding: 18px;
+            border: 4px solid #fff;
+            border-radius: 10px;
+            background: #111;
+            box-shadow: 8px 8px 0 #333;
+        }
+
+        .status-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 18px;
+            color: #aaa;
+            font-size: 10px;
         }
 
         #gameContainer {
-            display: flex;
-            justify-content: space-around;
-            width: 80%;
-            max-width: 600px;
+            min-height: 310px;
+            display: grid;
+            grid-template-columns: repeat(6, minmax(48px, 82px));
+            justify-content: center;
+            align-content: center;
+            gap: clamp(8px, 2vw, 18px);
         }
 
         .tube {
-            width: 100px;
-            height: 400px;
-            border: 2px solid #000;
-            border-radius: 10px;
+            height: 280px;
+            width: 100%;
+            max-width: 82px;
+            margin: 0 auto;
+            padding: 12px 8px 8px;
+            border: 4px solid #eee;
+            border-top: 0;
+            border-radius: 0 0 28px 28px;
             display: flex;
             flex-direction: column-reverse;
+            justify-content: flex-start;
             align-items: center;
-            overflow: hidden;
+            gap: 7px;
+            background: rgba(255, 255, 255, 0.03);
             cursor: pointer;
-            background-color: rgba(255, 255, 255, 0.8);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+        }
+
+        .tube.selected {
+            transform: translateY(-10px);
+            border-color: #ffcc00;
+            box-shadow: 0 0 18px rgba(255, 204, 0, 0.45);
+        }
+
+        .tube.valid-target {
+            border-color: #52e3e1;
         }
 
         .ball {
-            width: 80px;
-            height: 80px;
+            width: clamp(42px, 8vw, 58px);
+            height: clamp(42px, 8vw, 58px);
+            flex: 0 0 auto;
+            border: 3px solid rgba(0, 0, 0, 0.55);
             border-radius: 50%;
-            margin: 5px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            transition: transform 0.2s;
-        }
-
-        .ball:hover {
-            transform: scale(1.1);
+            box-shadow: inset -5px -6px 0 rgba(0, 0, 0, 0.18),
+                        inset 5px 5px 0 rgba(255, 255, 255, 0.22),
+                        0 4px 0 #000;
         }
 
         #controls {
-            margin-top: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 18px;
         }
 
         button {
-            padding: 10px 20px;
-            font-size: 16px;
-            margin: 5px;
-            border: none;
-            border-radius: 5px;
-            background-color: #33A8C7;
-            color: white;
+            min-height: 42px;
+            padding: 10px 14px;
+            border: 3px solid #000;
+            border-radius: 6px;
+            background: #ffcc00;
+            color: #000;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
             cursor: pointer;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            transition: background-color 0.3s;
+            box-shadow: 0 4px 0 #d9b300, 0 6px 0 #000;
         }
 
         button:hover {
-            background-color: #2a8bbd;
+            background: #fff148;
+        }
+
+        button:disabled {
+            background: #555;
+            color: #999;
+            box-shadow: 0 4px 0 #333, 0 6px 0 #111;
+            cursor: not-allowed;
         }
 
         #message {
-            margin-top: 20px;
-            font-size: 24px;
-            color: green;
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+            min-height: 22px;
+            margin: 14px 0 0;
+            text-align: center;
+            color: #52e3e1;
+            font-size: 12px;
+            line-height: 1.8;
+        }
+
+        #global-menu-home {
+            position: fixed;
+            top: 12px;
+            left: 12px;
+            z-index: 9999;
+            padding: 8px 12px;
+            border: 2px solid #ff69b4;
+            border-radius: 10px;
+            background: rgba(0, 0, 0, 0.72);
+            color: #fff;
+            text-decoration: none;
+            font-size: 11px;
+            line-height: 1.2;
+            box-shadow: 0 0 10px rgba(255, 105, 180, 0.35);
+        }
+
+        #global-menu-home:hover {
+            background: #ff69b4;
+            color: #001a4d;
+        }
+
+        @media (max-width: 520px) {
+            body {
+                padding: 62px 8px 20px;
+            }
+
+            .game-shell {
+                padding: 12px 6px;
+            }
+
+            #gameContainer {
+                grid-template-columns: repeat(3, minmax(58px, 82px));
+                min-height: 530px;
+                row-gap: 12px;
+            }
+
+            .tube {
+                height: 250px;
+            }
+
+            .status-row {
+                padding: 0 8px;
+            }
         }
     </style>
 </head>
 <body>
-    <div id="gameContainer">
-        <!-- Les tubes seront générés ici -->
-    </div>
-    <div id="controls">
-        <button id="restartButton">Restart Level</button>
-        <button id="addTubeButton">Add Extra Tube</button>
-    </div>
-    <div id="message"></div>
+    <h1>Ball Sort</h1>
+    <main class="game-shell">
+        <div class="status-row" aria-live="polite">
+            <span id="moveCount">MOVES 0</span>
+            <span id="tubeCount">TUBES 6</span>
+        </div>
+        <div id="gameContainer" aria-label="Ball sorting puzzle"></div>
+        <div id="controls">
+            <button id="undoButton" type="button" disabled>UNDO</button>
+            <button id="restartButton" type="button">RESTART</button>
+            <button id="newGameButton" type="button">NEW PUZZLE</button>
+        </div>
+        <div id="message" role="status" aria-live="polite"></div>
+    </main>
+    <a id="global-menu-home" href="../index.html" aria-label="Back to menu">Menu</a>
+
     <script>
         const gameContainer = document.getElementById('gameContainer');
         const restartButton = document.getElementById('restartButton');
-        const addTubeButton = document.getElementById('addTubeButton');
+        const undoButton = document.getElementById('undoButton');
+        const newGameButton = document.getElementById('newGameButton');
         const message = document.getElementById('message');
+        const moveCount = document.getElementById('moveCount');
 
-        const colors = ['#FFAB00', '#52E3E1', '#33A8C7', '#F050AE', '#D883FF'];
+        const colors = ['#ffab00', '#52e3e1', '#33a8c7', '#f050ae'];
+        const tubeSize = 4;
         let tubes = [];
+        let initialTubes = [];
         let selectedTube = null;
+        let history = [];
+        let moves = 0;
+        let won = false;
 
-        function createTube() {
-            const tube = document.createElement('div');
-            tube.className = 'tube';
-            tube.addEventListener('click', () => handleTubeClick(tube));
-            gameContainer.appendChild(tube);
-            tubes.push(tube);
+        function cloneTubes(source) {
+            return source.map(tube => [...tube]);
         }
 
-        function createBall(color) {
-            const ball = document.createElement('div');
-            ball.className = 'ball';
-            ball.style.backgroundColor = color;
-            return ball;
+        function canPour(fromIndex, toIndex) {
+            if (won || fromIndex === toIndex) return false;
+            const source = tubes[fromIndex];
+            const target = tubes[toIndex];
+            if (!source.length || target.length >= tubeSize) return false;
+
+            if (target.length === 0) return true;
+            return source[source.length - 1] === target[target.length - 1];
         }
 
-        function handleTubeClick(tube) {
-            if (selectedTube && selectedTube !== tube) {
-                const ball = selectedTube.lastElementChild;
-                if (ball) {
-                    tube.appendChild(ball);
-                    selectedTube = null;
-                    checkWinCondition();
+        function moveBall(fromIndex, toIndex) {
+            history.push(cloneTubes(tubes));
+            tubes[toIndex].push(tubes[fromIndex].pop());
+            moves++;
+            undoButton.disabled = false;
+            render();
+            checkWin();
+        }
+
+        function handleTubeClick(index) {
+            if (won) return;
+
+            if (selectedTube === null) {
+                if (tubes[index].length) {
+                    selectedTube = index;
+                    message.textContent = 'Choose a tube';
                 }
+            } else if (selectedTube === index) {
+                selectedTube = null;
+                message.textContent = '';
+            } else if (canPour(selectedTube, index)) {
+                moveBall(selectedTube, index);
+                selectedTube = null;
+                message.textContent = '';
             } else {
-                selectedTube = tube;
+                message.textContent = 'That move is not allowed';
+                selectedTube = null;
             }
+            render();
         }
 
-        function initializeGame() {
-            tubes.forEach(tube => gameContainer.removeChild(tube));
+        function createRandomPuzzle() {
             tubes = [];
-            selectedTube = null;
-            message.textContent = '';
+            for (let color = 0; color < colors.length; color++) {
+                tubes.push([color, color, color, color]);
+            }
+            tubes.push([], []);
 
-            for (let i = 0; i < 5; i++) {
-                createTube();
+            for (let step = 0; step < 160; step++) {
+                const from = Math.floor(Math.random() * tubes.length);
+                const availableTargets = tubes
+                    .map((_, index) => index)
+                    .filter(index => canShufflePour(from, index));
+
+                if (availableTargets.length) {
+                    const to = availableTargets[Math.floor(Math.random() * availableTargets.length)];
+                    tubes[to].push(tubes[from].pop());
+                }
             }
 
-            for (let i = 0; i < 20; i++) {
-                const color = colors[Math.floor(Math.random() * colors.length)];
-                const ball = createBall(color);
-                tubes[Math.floor(Math.random() * tubes.length)].appendChild(ball);
-            }
-        }
+            const alreadySolved = tubes.every(tube =>
+                tube.length === 0 ||
+                (tube.length === tubeSize && tube.every(color => color === tube[0]))
+            );
 
-        function addExtraTube() {
-            createTube();
-        }
-
-        function checkWinCondition() {
-            for (let tube of tubes) {
-                let balls = tube.children;
-                if (balls.length > 0) {
-                    let firstColor = balls[0].style.backgroundColor;
-                    for (let ball of balls) {
-                        if (ball.style.backgroundColor !== firstColor) {
-                            return;
-                        }
+            if (alreadySolved) {
+                const emptyIndexes = tubes
+                    .map((tube, index) => tube.length === 0 ? index : -1)
+                    .filter(index => index !== -1);
+                for (const sourceIndex of tubes.keys()) {
+                    if (emptyIndexes.length === 0) break;
+                    if (tubes[sourceIndex].length > 0) {
+                        const targetIndex = emptyIndexes.shift();
+                        tubes[targetIndex].push(tubes[sourceIndex].pop());
                     }
                 }
             }
-            message.textContent = 'Vous avez gagné !';
+
+            initialTubes = cloneTubes(tubes);
+            history = [];
+            selectedTube = null;
+            moves = 0;
+            won = false;
+            undoButton.disabled = true;
+            message.textContent = '';
+            render();
         }
 
-        restartButton.addEventListener('click', initializeGame);
-        addTubeButton.addEventListener('click', addExtraTube);
+        function canShufflePour(fromIndex, toIndex) {
+            if (fromIndex === toIndex) return false;
+            const source = tubes[fromIndex];
+            const target = tubes[toIndex];
+            return source.length > 0 &&
+                   target.length < tubeSize &&
+                   (target.length === 0 || source[source.length - 1] === target[target.length - 1]);
+        }
 
-        initializeGame();
+        function restartGame() {
+            tubes = cloneTubes(initialTubes);
+            history = [];
+            selectedTube = null;
+            moves = 0;
+            won = false;
+            undoButton.disabled = true;
+            message.textContent = '';
+            render();
+        }
+
+        function undoMove() {
+            if (!history.length) return;
+            tubes = history.pop();
+            moves = Math.max(0, moves - 1);
+            selectedTube = null;
+            won = false;
+            undoButton.disabled = history.length === 0;
+            message.textContent = '';
+            render();
+        }
+
+        function checkWin() {
+            won = tubes.every(tube =>
+                tube.length === 0 ||
+                (tube.length === tubeSize && tube.every(color => color === tube[0]))
+            );
+
+            if (won) {
+                message.textContent = `YOU WON IN ${moves} MOVES!`;
+                undoButton.disabled = true;
+            }
+        }
+
+        function render() {
+            gameContainer.innerHTML = '';
+            moveCount.textContent = `MOVES ${moves}`;
+
+            tubes.forEach((tube, index) => {
+                const tubeElement = document.createElement('button');
+                tubeElement.type = 'button';
+                tubeElement.className = 'tube';
+                tubeElement.setAttribute('aria-label', `Tube ${index + 1}, ${tube.length} balls`);
+
+                if (selectedTube === index) tubeElement.classList.add('selected');
+                if (selectedTube !== null && selectedTube !== index && canPour(selectedTube, index)) {
+                    tubeElement.classList.add('valid-target');
+                }
+
+                tube.forEach(color => {
+                    const ball = document.createElement('span');
+                    ball.className = 'ball';
+                    ball.style.backgroundColor = colors[color];
+                    tubeElement.appendChild(ball);
+                });
+
+                tubeElement.addEventListener('click', () => handleTubeClick(index));
+                gameContainer.appendChild(tubeElement);
+            });
+        }
+
+        restartButton.addEventListener('click', restartGame);
+        undoButton.addEventListener('click', undoMove);
+        newGameButton.addEventListener('click', createRandomPuzzle);
+
+        createRandomPuzzle();
     </script>
-
-<style>
-#global-menu-home{position:fixed;top:12px;left:12px;z-index:9999;padding:8px 12px;border:2px solid #ff69b4;border-radius:10px;background:rgba(0,0,0,.72);color:#fff;text-decoration:none;font-family:"Press Start 2P",cursive;font-size:11px;line-height:1.2;box-shadow:0 0 10px rgba(255,105,180,.35)}
-#global-menu-home:hover{background:#ff69b4;color:#001a4d}
-</style>
-<a id="global-menu-home" href="../index.html" aria-label="Back to menu">Menu</a>
 </body>
 </html>
